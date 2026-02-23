@@ -3,15 +3,9 @@ from typing import Protocol
 
 from tg_auto_test.test_utils.json_types import JsonValue
 from tg_auto_test.test_utils.media_metadata import audio_duration_seconds, mp4_duration_and_dimensions
+from tg_auto_test.test_utils.media_types import MEDIA_PARAM_KEY
 from tg_auto_test.test_utils.message_factory_media import image_dimensions
 from tg_auto_test.test_utils.models import FileData, TelegramApiCall
-
-_MEDIA_PARAM_KEY: dict[str, str] = {
-    "sendDocument": "document",
-    "sendVoice": "voice",
-    "sendPhoto": "photo",
-    "sendVideoNote": "video_note",
-}
 
 
 class _MediaHost(Protocol):
@@ -49,7 +43,7 @@ class MediaMixin:
         msg: dict[str, JsonValue] = self._base_message(parameters)
         call = self.calls[-1]
         method = call.api_method
-        fid = parameters[_MEDIA_PARAM_KEY[method]]
+        fid = parameters[MEDIA_PARAM_KEY[method]]
         raw = _resolve_bytes(call, fid, self.file_store)
         base: dict[str, JsonValue] = {"file_id": fid, "file_unique_id": f"unique_{fid}"}
 

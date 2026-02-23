@@ -1,5 +1,13 @@
 import mimetypes
 
+# Mapping from Telegram Bot API method names to their media parameter keys
+MEDIA_PARAM_KEY: dict[str, str] = {
+    "sendDocument": "document",
+    "sendVoice": "voice",
+    "sendPhoto": "photo",
+    "sendVideoNote": "video_note",
+}
+
 
 def detect_content_type(
     filename: str,

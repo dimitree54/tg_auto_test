@@ -41,14 +41,14 @@ TelethonResponse = (
 
 async def handle_telethon_request(client: ServerlessTelegramClientCore, request: TelethonRequest) -> TelethonResponse:
     if isinstance(request, functions.payments.GetStarsStatusRequest):
-        balance = getattr(client, "_stars_balance")
+        balance = client._stars_balance
         return types.payments.StarsStatus(balance=types.StarsAmount(amount=balance, nanos=0), chats=[], users=[])
 
     if isinstance(request, functions.payments.GetPaymentFormRequest):
         invoice = request.invoice
         if not isinstance(invoice, types.InputInvoiceMessage):
             raise NotImplementedError(f"Unsupported invoice type: {type(invoice)!r}")
-        invoices = getattr(client, "_invoices")
+        invoices = client._invoices
         if invoice.msg_id not in invoices:
             raise RuntimeError(f"Unknown invoice message id: {invoice.msg_id}")
         invoice_data = invoices[invoice.msg_id]
@@ -68,18 +68,18 @@ async def handle_telethon_request(client: ServerlessTelegramClientCore, request:
         invoice = request.invoice
         if not isinstance(invoice, types.InputInvoiceMessage):
             raise NotImplementedError(f"Unsupported invoice type: {type(invoice)!r}")
-        await getattr(client, "simulate_stars_payment")(invoice.msg_id)
+        await client.simulate_stars_payment(invoice.msg_id)
         return types.payments.PaymentResult(
             updates=types.Updates(updates=[], users=[], chats=[], date=None, seq=0),
         )
 
     if isinstance(request, functions.bots.GetBotCommandsRequest):
         key = _scope_key_from_telethon(request.scope)
-        stored = client.request._scoped_commands.get(key, [])  # noqa: SLF001
+        stored = client.request.get_scoped_commands(key)
         return [types.BotCommand(command=cmd["command"], description=cmd["description"]) for cmd in stored]
 
     if isinstance(request, functions.bots.GetBotMenuButtonRequest):
-        menu = client.request._menu_button  # noqa: SLF001
+        menu = client.request.get_menu_button()
         if menu is not None and menu.get("type") == "commands":
             return types.BotMenuButtonCommands()
         return types.BotMenuButtonDefault()

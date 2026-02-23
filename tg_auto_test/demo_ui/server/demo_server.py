@@ -117,8 +117,7 @@ class DemoServer:
         app.state.demo_server = self
 
         # Mount static files using library's own assets
-        if _STATIC_DIR.exists():
-            app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
+        app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
         # Register routes using library's own templates
         register_routes(app, self, _TEMPLATES_DIR)

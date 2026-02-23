@@ -19,6 +19,9 @@ send_message
 send_file
 get_response
 click_inline_button
+clear_bot_state
+get_scoped_commands
+get_menu_button
 
 # Test helpers
 build_test_application  # Helper function in tests/unit/helpers_ptb_app.py

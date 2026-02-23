@@ -4,16 +4,10 @@ import json
 from telegram.request import BaseRequest, RequestData
 
 from tg_auto_test.test_utils.json_types import JsonValue
+from tg_auto_test.test_utils.media_types import MEDIA_PARAM_KEY
 from tg_auto_test.test_utils.models import FileData, TelegramApiCall
 from tg_auto_test.test_utils.stub_request_commands import CommandMenuMixin
 from tg_auto_test.test_utils.stub_request_media import MediaMixin
-
-_MEDIA_PARAM_KEY: dict[str, str] = {
-    "sendDocument": "document",
-    "sendVoice": "voice",
-    "sendPhoto": "photo",
-    "sendVideoNote": "video_note",
-}
 
 _FILE_PATH_PREFIX = "/file/bot"
 
@@ -99,7 +93,7 @@ class StubTelegramRequest(CommandMenuMixin, MediaMixin, BaseRequest):
         """Extract uploaded file bytes from multipart data."""
         if request_data is None or not request_data.contains_files:
             return None
-        param_key = _MEDIA_PARAM_KEY.get(api_method)
+        param_key = MEDIA_PARAM_KEY.get(api_method)
         if param_key is None:
             return None
         multipart = request_data.multipart_data
@@ -157,6 +151,14 @@ class StubTelegramRequest(CommandMenuMixin, MediaMixin, BaseRequest):
 
     def _bot_user(self) -> dict[str, JsonValue]:
         return {"id": 999_999, "is_bot": True, "first_name": self._bot_first_name, "username": self._bot_username}
+
+    def get_scoped_commands(self, key: str) -> list[dict[str, str]]:
+        """Get scoped commands for a given scope key."""
+        return self._scoped_commands.get(key, [])
+
+    def get_menu_button(self) -> dict[str, str] | None:
+        """Get the current menu button."""
+        return self._menu_button
 
     @staticmethod
     def _ok_response(result: JsonValue) -> tuple[int, bytes]:

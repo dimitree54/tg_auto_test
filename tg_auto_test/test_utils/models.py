@@ -73,8 +73,8 @@ class ServerlessMessage:
     media_photo: Photo | None = None
     media_document: Document | None = None
     invoice_data: MessageMediaInvoice | None = None
-    raw_bytes: bytes = b""
-    file_store: dict[str, FileData] = field(default_factory=dict, repr=False)
+    _raw_bytes: bytes = b""
+    _file_store: dict[str, FileData] = field(default_factory=dict, repr=False)
     response_file_id: str = ""
     reply_markup_data: ReplyMarkup | None = field(default=None, repr=False)
     _click_callback: ClickCallback | None = field(default=None, repr=False)
@@ -160,11 +160,12 @@ class ServerlessMessage:
         Returns raw bytes from the bot's response (for uploads like mirror)
         or from the in-memory file store (for echo/passthrough).
         """
-        del file  # always returns bytes in serverless mode
-        if self.raw_bytes:
-            return self.raw_bytes
-        if self.response_file_id and self.response_file_id in self.file_store:
-            return self.file_store[self.response_file_id].data
+        if file is not bytes:
+            raise NotImplementedError("ServerlessTelegramClient only supports file=bytes")
+        if self._raw_bytes:
+            return self._raw_bytes
+        if self.response_file_id and self.response_file_id in self._file_store:
+            return self._file_store[self.response_file_id].data
         return None
 
     async def click(self, *, data: bytes) -> "ServerlessMessage":

@@ -2,7 +2,7 @@ from collections import deque
 from pathlib import Path
 from typing import Union
 
-from telegram import BotCommandScopeChat, Update
+from telegram import BotCommandScopeChat, MenuButtonDefault, Update
 from telegram.ext import Application
 from telethon.tl.types import LabeledPrice, User
 
@@ -76,6 +76,12 @@ class ServerlessTelegramClientCore:
         command_list = [{"command": cmd.command, "description": cmd.description} for cmd in commands]
         return {"commands": command_list, "menu_button_type": menu_btn_type}
 
+    async def clear_bot_state(self) -> None:
+        """Clear bot state including commands and menu button."""
+        scope = BotCommandScopeChat(chat_id=self.chat_id)
+        await self.application.bot.delete_my_commands(scope=scope)
+        await self.application.bot.set_chat_menu_button(chat_id=self.chat_id, menu_button=MenuButtonDefault())
+
     async def get_messages(
         self, entity: str, ids: int | list[int]
     ) -> Union["TelethonCompatibleMessage", list["TelethonCompatibleMessage"], None]:
@@ -99,6 +105,7 @@ class ServerlessTelegramClientCore:
         return self._outbox.popleft()
 
     async def process_text_message(self, text: str) -> ServerlessMessage:
+        self._outbox.clear()  # Auto-clear previous responses
         payload, msg = self._helpers.base_message_update(self.chat_id)
         msg["text"] = text
         if text.startswith("/"):
@@ -117,6 +124,7 @@ class ServerlessTelegramClientCore:
         voice_note: bool = False,
         video_note: bool = False,
     ) -> ServerlessMessage:
+        self._outbox.clear()  # Auto-clear previous responses
         file_id = self._helpers.make_file_id()
         file_bytes = file if isinstance(file, bytes) else file.read_bytes()
         fname = file.name if isinstance(file, Path) else "file"

@@ -10,16 +10,10 @@ from telethon.tl.types import (
 )
 
 from tg_auto_test.test_utils.media_metadata import audio_duration_seconds, mp4_duration_and_dimensions
+from tg_auto_test.test_utils.media_types import MEDIA_PARAM_KEY
 from tg_auto_test.test_utils.message_factory_invoice import build_invoice_message, message_id_from_result
 from tg_auto_test.test_utils.message_factory_media import image_dimensions, make_document
 from tg_auto_test.test_utils.models import FileData, ReplyMarkup, ServerlessMessage, TelegramApiCall
-
-_MEDIA_PARAM_KEY: dict[str, str] = {
-    "sendDocument": "document",
-    "sendVoice": "voice",
-    "sendPhoto": "photo",
-    "sendVideoNote": "video_note",
-}
 
 
 def build_serverless_message(
@@ -32,7 +26,7 @@ def build_serverless_message(
     if call.api_method == "sendInvoice":
         return build_invoice_message(call)
 
-    param_key = _MEDIA_PARAM_KEY.get(call.api_method)
+    param_key = MEDIA_PARAM_KEY.get(call.api_method)
     if param_key is None:
         raise ValueError(f"Unsupported API method: {call.api_method}")
 
@@ -78,8 +72,8 @@ def _build_photo_message(
     )
     return ServerlessMessage(
         media_photo=photo,
-        raw_bytes=raw_bytes,
-        file_store=file_store,
+        _raw_bytes=raw_bytes,
+        _file_store=file_store,
         response_file_id=file_id,
     )
 
@@ -95,8 +89,8 @@ def _build_document_message(
     doc = make_document(file_id, len(raw_bytes), file_data.content_type, attributes)
     return ServerlessMessage(
         media_document=doc,
-        raw_bytes=raw_bytes,
-        file_store=file_store,
+        _raw_bytes=raw_bytes,
+        _file_store=file_store,
         response_file_id=file_id,
     )
 
@@ -116,8 +110,8 @@ def _build_voice_message(
     doc = make_document(file_id, len(raw_bytes), file_data.content_type, attributes)
     return ServerlessMessage(
         media_document=doc,
-        raw_bytes=raw_bytes,
-        file_store=file_store,
+        _raw_bytes=raw_bytes,
+        _file_store=file_store,
         response_file_id=file_id,
     )
 
@@ -139,8 +133,8 @@ def _build_video_note_message(
     doc = make_document(file_id, len(raw_bytes), file_data.content_type, attributes)
     return ServerlessMessage(
         media_document=doc,
-        raw_bytes=raw_bytes,
-        file_store=file_store,
+        _raw_bytes=raw_bytes,
+        _file_store=file_store,
         response_file_id=file_id,
     )
 
