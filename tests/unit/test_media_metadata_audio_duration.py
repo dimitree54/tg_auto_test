@@ -1,4 +1,4 @@
-"""Unit tests for audio_duration_seconds OGG parser implementation."""
+"""Unit tests for audio_duration_seconds OGG and MP3 parser implementation."""
 
 import struct
 

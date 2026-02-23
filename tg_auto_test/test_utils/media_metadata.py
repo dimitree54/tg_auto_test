@@ -2,17 +2,25 @@
 
 import struct
 
+from tg_auto_test.test_utils._mp3_duration import parse_mp3_duration
+
 
 def audio_duration_seconds(data: bytes) -> float | None:
     """Return audio duration in seconds from bytes, or None if unavailable."""
     if not data:
         return None
 
+    # Try OGG first
     max_granule = _parse_ogg_max_granule(data)
-    if max_granule is None or max_granule <= 0:
-        return None
+    if max_granule is not None and max_granule > 0:
+        return max_granule / 48_000.0
 
-    return max_granule / 48_000.0
+    # Try MP3 if OGG failed
+    mp3_duration = parse_mp3_duration(data)
+    if mp3_duration is not None:
+        return mp3_duration
+
+    return None
 
 
 def _parse_ogg_max_granule(data: bytes) -> int | None:
