@@ -1,0 +1,174 @@
+from collections import deque
+from pathlib import Path
+
+from telegram import Update
+from telegram.ext import Application
+from telethon.tl.types import LabeledPrice, User
+
+from tg_auto_test.test_utils.file_message_builder import build_file_payload
+from tg_auto_test.test_utils.json_types import JsonValue
+from tg_auto_test.test_utils.media_types import detect_content_type
+from tg_auto_test.test_utils.models import FileData, ServerlessMessage, TelegramApiCall
+from tg_auto_test.test_utils.ptb_types import BuildApplication
+from tg_auto_test.test_utils.response_processor import extract_responses
+from tg_auto_test.test_utils.serverless_telegram_conversation import ServerlessTelegramConversation
+from tg_auto_test.test_utils.stub_request import StubTelegramRequest
+
+_FAKE_TOKEN = "123:ABC"
+
+
+class ServerlessTelegramClientCore:
+    def __init__(
+        self,
+        build_application: BuildApplication,
+        user_id: int = 9001,
+        first_name: str = "Alice",
+        *,
+        bot_username: str = "test_bot",
+        bot_first_name: str = "TestBot",
+    ) -> None:
+        self.request = StubTelegramRequest(bot_username=bot_username, bot_first_name=bot_first_name)
+        builder = Application.builder().token(_FAKE_TOKEN).request(self.request)
+        self.application = build_application(builder)
+        self.chat_id, self.user_id, self.first_name = user_id, user_id, first_name
+        self._next_update_id = 1
+        self._next_message_id = 1
+        self._file_id_counter = 1
+        self._connected = False
+        self._outbox: deque[ServerlessMessage] = deque()
+        self._stars_balance = 100
+        self._invoices: dict[int, dict[str, str | int | list[LabeledPrice]]] = {}
+
+    async def connect(self) -> None:
+        if not self._connected:
+            await self.application.initialize()
+            self._connected = True
+
+    async def disconnect(self) -> None:
+        if self._connected:
+            await self.application.shutdown()
+            self._connected = False
+
+    async def get_me(self) -> User:
+        return User(id=self.user_id, is_self=True, first_name=self.first_name, bot=False, access_hash=0)
+
+    async def get_dialogs(self) -> list[str]:
+        return []
+
+    def conversation(self, bot_username: str, timeout: int = 10) -> ServerlessTelegramConversation:
+        del bot_username, timeout
+        return ServerlessTelegramConversation(client=self)
+
+    def pop_response(self) -> ServerlessMessage:
+        if not self._outbox:
+            raise RuntimeError("No pending response. Call send_message() first.")
+        return self._outbox.popleft()
+
+    async def process_text_message(self, text: str) -> ServerlessMessage:
+        payload, msg = self._base_message_update()
+        msg["text"] = text
+        if text.startswith("/"):
+            cmd_len = text.find(" ") if " " in text else len(text)
+            entity: dict[str, JsonValue] = {"offset": 0, "length": cmd_len, "type": "bot_command"}
+            entities: list[JsonValue] = [entity]
+            msg["entities"] = entities
+        return await self._process_message_update(payload)
+
+    async def process_file_message(
+        self,
+        file: Path | bytes,
+        *,
+        caption: str = "",
+        force_document: bool = False,
+        voice_note: bool = False,
+        video_note: bool = False,
+    ) -> ServerlessMessage:
+        file_id = self._make_file_id()
+        file_bytes = file if isinstance(file, bytes) else file.read_bytes()
+        fname = file.name if isinstance(file, Path) else "file"
+        ct = detect_content_type(fname, force_document, voice_note, video_note)
+        self.request.file_store[file_id] = FileData(data=file_bytes, filename=fname, content_type=ct)
+        payload, msg = self._base_message_update()
+        build_file_payload(
+            msg,
+            file_id,
+            file,
+            file_bytes=file_bytes,
+            caption=caption,
+            force_document=force_document,
+            voice_note=voice_note,
+            video_note=video_note,
+        )
+        return await self._process_message_update(payload)
+
+    async def process_callback_query(self, message_id: int, data: str) -> ServerlessMessage:
+        bot_user = self.request._bot_user()  # noqa: SLF001
+        callback_message: dict[str, JsonValue] = {
+            "message_id": message_id,
+            "date": 0,
+            "chat": {"id": self.chat_id, "type": "private"},
+            "from": bot_user,
+            "text": "",
+        }
+        callback_query: dict[str, JsonValue] = {
+            "id": f"cb_{message_id}_{data}",
+            "from": self._user_dict(),
+            "chat_instance": str(self.chat_id),
+            "message": callback_message,
+            "data": data,
+        }
+        payload: dict[str, JsonValue] = {"update_id": self._next_update_id_value(), "callback_query": callback_query}
+        return await self._process_message_update(payload)
+
+    def _base_message_update(self) -> tuple[dict[str, JsonValue], dict[str, JsonValue]]:
+        message: dict[str, JsonValue] = {
+            "message_id": self._next_message_id_value(),
+            "date": 0,
+            "chat": {"id": self.chat_id, "type": "private"},
+            "from": self._user_dict(),
+        }
+        payload: dict[str, JsonValue] = {
+            "update_id": self._next_update_id_value(),
+            "message": message,
+        }
+        return payload, message
+
+    def _next_update_id_value(self) -> int:
+        val, self._next_update_id = self._next_update_id, self._next_update_id + 1
+        return val
+
+    def _next_message_id_value(self) -> int:
+        val, self._next_message_id = self._next_message_id, self._next_message_id + 1
+        return val
+
+    def _user_dict(self) -> dict[str, JsonValue]:
+        return {"id": self.user_id, "is_bot": False, "first_name": self.first_name}
+
+    def _make_file_id(self) -> str:
+        fid = f"stub_file_{self._file_id_counter}"
+        self._file_id_counter += 1
+        return fid
+
+    async def _process_message_update(self, payload: dict[str, JsonValue]) -> ServerlessMessage:
+        new_calls = await self._process_update(payload)
+        responses = extract_responses(new_calls, self.request.file_store, self._invoices, self._handle_click)
+        if not responses:
+            raise RuntimeError("Bot did not send a recognizable response.")
+        for resp in responses:
+            self._outbox.append(resp)
+        return responses[-1]
+
+    async def _process_update(self, payload: dict[str, JsonValue]) -> list[TelegramApiCall]:
+        if not self._connected:
+            raise RuntimeError("Call connect() before processing payloads.")
+        calls_before = len(self.request.calls)
+        update = Update.de_json(payload, self.application.bot)
+        await self.application.process_update(update)
+        return self.request.calls[calls_before:]
+
+    async def _handle_click(self, message_id: int, data: str) -> ServerlessMessage:
+        outbox_before = len(self._outbox)
+        result = await self.process_callback_query(message_id, data)
+        while len(self._outbox) > outbox_before:
+            self._outbox.pop()
+        return result
