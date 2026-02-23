@@ -22,3 +22,16 @@ click_inline_button
 
 # Test helpers
 build_test_application  # Helper function in tests/unit/helpers_ptb_app.py
+
+# Demo UI server - route handlers are dynamically registered
+menu_button_type  # Pydantic model field
+create_demo_app  # Factory function for demo apps
+index  # FastAPI route handler
+serve_file  # FastAPI route handler
+get_state  # FastAPI route handler
+send_document  # FastAPI route handler
+send_voice  # FastAPI route handler
+send_photo  # FastAPI route handler
+send_video_note  # FastAPI route handler
+pay_invoice  # FastAPI route handler
+reset  # FastAPI route handler
