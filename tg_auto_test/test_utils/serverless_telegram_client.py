@@ -1,5 +1,6 @@
 from telethon.tl.types import InputPeerUser
 
+from tg_auto_test.test_utils.models import TelegramApiCall
 from tg_auto_test.test_utils.ptb_types import BuildApplication
 from tg_auto_test.test_utils.serverless_telegram_client_core import ServerlessTelegramClientCore
 from tg_auto_test.test_utils.serverless_telethon_rpc import (
@@ -7,6 +8,9 @@ from tg_auto_test.test_utils.serverless_telethon_rpc import (
     TelethonResponse,
     handle_telethon_request,
 )
+
+# Export the TelegramApiCall class for consumers
+__all__ = ["ServerlessTelegramClient", "TelegramApiCall"]
 
 
 class ServerlessTelegramClient(ServerlessTelegramClientCore):
@@ -51,10 +55,10 @@ class ServerlessTelegramClient(ServerlessTelegramClientCore):
         self._stars_balance -= total_amount
 
         pre_checkout_calls = await self._process_update({
-            "update_id": self._next_update_id_value(),
+            "update_id": self._helpers.next_update_id_value(),
             "pre_checkout_query": {
                 "id": f"precheckout_{invoice_message_id}",
-                "from": self._user_dict(),
+                "from": self._helpers.user_dict(),
                 "currency": currency,
                 "total_amount": total_amount,
                 "invoice_payload": payload,
@@ -68,12 +72,12 @@ class ServerlessTelegramClient(ServerlessTelegramClientCore):
             raise RuntimeError("Bot rejected the pre-checkout query.")
 
         await self._process_message_update({
-            "update_id": self._next_update_id_value(),
+            "update_id": self._helpers.next_update_id_value(),
             "message": {
-                "message_id": self._next_message_id_value(),
+                "message_id": self._helpers.next_message_id_value(),
                 "date": 0,
                 "chat": {"id": self.chat_id, "type": "private"},
-                "from": self._user_dict(),
+                "from": self._helpers.user_dict(),
                 "successful_payment": {
                     "currency": currency,
                     "total_amount": total_amount,

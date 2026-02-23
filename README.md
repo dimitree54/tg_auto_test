@@ -27,7 +27,7 @@ You provide a `build_application` callback that configures your PTB `Application
 ```python
 from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 from telegram import Update
-from tg_auto_test.test_utils.serverless_telegram_client import ServerlessTelegramClient
+from tg_auto_test.test_utils.serverless_telegram_client import ServerlessTelegramClient, TelegramApiCall
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(update.message.text)
@@ -44,6 +44,11 @@ async with client.conversation("test_bot") as conv:
     await conv.send_message("hello")
     msg = await conv.get_response()
     assert msg.text == "hello"
+    
+    # Inspect API calls
+    assert len(client.api_calls) == 2  # getMe + sendMessage
+    assert client.last_api_call.api_method == "sendMessage"
+    assert client.last_api_call.parameters["text"] == "hello"
 await client.disconnect()
 ```
 
@@ -62,6 +67,10 @@ ServerlessTelegramClient(
     bot_first_name: str = "TestBot"
 )
 ```
+
+**API call inspection:**
+- `.api_calls: list[TelegramApiCall]` — read-only list of all API calls made through this client
+- `.last_api_call: TelegramApiCall | None` — the last API call made, or None if no calls were made
 
 ### ServerlessTelegramConversation
 
@@ -88,6 +97,15 @@ Response object with Telethon-compatible interface:
 - `.reply_markup_data: dict | None` — raw reply markup data
 - `await .download_media(file=bytes) -> bytes | None` — download media bytes
 - `await .click(data: bytes) -> ServerlessMessage` — click inline button
+
+### TelegramApiCall
+
+Data class representing a single Bot API call:
+
+- `.api_method: str` — the API method name (e.g., "sendMessage", "getMe")
+- `.parameters: dict[str, str]` — request parameters sent to the API
+- `.file: FileData | None` — uploaded file data, if any
+- `.result: JsonValue | None` — the API response result, if successful
 
 ### Supported Telethon RPC subset
 

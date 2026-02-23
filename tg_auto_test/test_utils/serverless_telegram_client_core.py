@@ -12,6 +12,7 @@ from tg_auto_test.test_utils.media_types import detect_content_type
 from tg_auto_test.test_utils.models import FileData, ServerlessMessage, TelegramApiCall
 from tg_auto_test.test_utils.ptb_types import BuildApplication
 from tg_auto_test.test_utils.response_processor import extract_responses
+from tg_auto_test.test_utils.serverless_client_helpers import ServerlessClientHelpers
 from tg_auto_test.test_utils.serverless_telegram_conversation import ServerlessTelegramConversation
 from tg_auto_test.test_utils.stub_request import StubTelegramRequest
 from tg_auto_test.test_utils.telethon_compatible_message import TelethonCompatibleMessage
@@ -33,13 +34,21 @@ class ServerlessTelegramClientCore:
         builder = Application.builder().token(_FAKE_TOKEN).request(self.request)
         self.application = build_application(builder)
         self.chat_id, self.user_id, self.first_name = user_id, user_id, first_name
-        self._next_update_id = 1
-        self._next_message_id = 1
-        self._file_id_counter = 1
+        self._helpers = ServerlessClientHelpers(user_id, first_name)
         self._connected = False
         self._outbox: deque[ServerlessMessage] = deque()
         self._stars_balance = 100
         self._invoices: dict[int, dict[str, str | int | list[LabeledPrice]]] = {}
+
+    @property
+    def api_calls(self) -> list[TelegramApiCall]:
+        """Read-only view of all API calls made through this client."""
+        return list(self.request.calls)
+
+    @property
+    def last_api_call(self) -> TelegramApiCall | None:
+        """The last API call made through this client, or None if no calls were made."""
+        return self.request.calls[-1] if self.request.calls else None
 
     async def connect(self) -> None:
         if not self._connected:
@@ -90,7 +99,7 @@ class ServerlessTelegramClientCore:
         return self._outbox.popleft()
 
     async def process_text_message(self, text: str) -> ServerlessMessage:
-        payload, msg = self._base_message_update()
+        payload, msg = self._helpers.base_message_update(self.chat_id)
         msg["text"] = text
         if text.startswith("/"):
             cmd_len = text.find(" ") if " " in text else len(text)
@@ -108,12 +117,12 @@ class ServerlessTelegramClientCore:
         voice_note: bool = False,
         video_note: bool = False,
     ) -> ServerlessMessage:
-        file_id = self._make_file_id()
+        file_id = self._helpers.make_file_id()
         file_bytes = file if isinstance(file, bytes) else file.read_bytes()
         fname = file.name if isinstance(file, Path) else "file"
         ct = detect_content_type(fname, force_document, voice_note, video_note)
         self.request.file_store[file_id] = FileData(data=file_bytes, filename=fname, content_type=ct)
-        payload, msg = self._base_message_update()
+        payload, msg = self._helpers.base_message_update(self.chat_id)
         build_file_payload(
             msg,
             file_id,
@@ -137,42 +146,16 @@ class ServerlessTelegramClientCore:
         }
         callback_query: dict[str, JsonValue] = {
             "id": f"cb_{message_id}_{data}",
-            "from": self._user_dict(),
+            "from": self._helpers.user_dict(),
             "chat_instance": str(self.chat_id),
             "message": callback_message,
             "data": data,
         }
-        payload: dict[str, JsonValue] = {"update_id": self._next_update_id_value(), "callback_query": callback_query}
-        return await self._process_message_update(payload)
-
-    def _base_message_update(self) -> tuple[dict[str, JsonValue], dict[str, JsonValue]]:
-        message: dict[str, JsonValue] = {
-            "message_id": self._next_message_id_value(),
-            "date": 0,
-            "chat": {"id": self.chat_id, "type": "private"},
-            "from": self._user_dict(),
-        }
         payload: dict[str, JsonValue] = {
-            "update_id": self._next_update_id_value(),
-            "message": message,
+            "update_id": self._helpers.next_update_id_value(),
+            "callback_query": callback_query,
         }
-        return payload, message
-
-    def _next_update_id_value(self) -> int:
-        val, self._next_update_id = self._next_update_id, self._next_update_id + 1
-        return val
-
-    def _next_message_id_value(self) -> int:
-        val, self._next_message_id = self._next_message_id, self._next_message_id + 1
-        return val
-
-    def _user_dict(self) -> dict[str, JsonValue]:
-        return {"id": self.user_id, "is_bot": False, "first_name": self.first_name}
-
-    def _make_file_id(self) -> str:
-        fid = f"stub_file_{self._file_id_counter}"
-        self._file_id_counter += 1
-        return fid
+        return await self._process_message_update(payload)
 
     async def _process_message_update(self, payload: dict[str, JsonValue]) -> ServerlessMessage:
         new_calls = await self._process_update(payload)
