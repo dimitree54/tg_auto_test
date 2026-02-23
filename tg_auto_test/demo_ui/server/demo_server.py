@@ -83,7 +83,7 @@ class DemoServer:
         peer: str,
         *,
         timeout: float = 10.0,
-        on_reset: Callable[[DemoClientProtocol], Awaitable[None]] | None = None,
+        on_action: Callable[[str, DemoClientProtocol], Awaitable[None]] | None = None,
     ) -> None:
         """Initialize demo server with Telethon client.
 
@@ -91,7 +91,7 @@ class DemoServer:
             client: Telegram client implementing Telethon interface
             peer: Peer identifier (bot username, etc.)
             timeout: Conversation timeout in seconds
-            on_reset: Optional async callback called during reset after built-in cleanup
+            on_action: Optional async callback called after every demo server action completes
         """
         if not peer:
             raise ValueError("Peer must be specified (no hardcoded peer allowed)")
@@ -99,7 +99,7 @@ class DemoServer:
         self.client = client
         self.peer = peer
         self.timeout = timeout
-        self.on_reset = on_reset
+        self.on_action = on_action
         self.file_store = FileStore()
 
     @asynccontextmanager
@@ -131,13 +131,13 @@ def create_demo_app(
     peer: str,
     *,
     timeout: float = 10.0,
-    on_reset: Callable[[DemoClientProtocol], Awaitable[None]] | None = None,
+    on_action: Callable[[str, DemoClientProtocol], Awaitable[None]] | None = None,
 ) -> FastAPI:
     """Factory function to create a demo FastAPI app."""
     server = DemoServer(
         client=client,
         peer=peer,
         timeout=timeout,
-        on_reset=on_reset,
+        on_action=on_action,
     )
     return server.create_app()

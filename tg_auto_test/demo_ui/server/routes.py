@@ -51,37 +51,72 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
         command_list = [
             BotCommandInfo(command=cmd["command"], description=cmd["description"]) for cmd in bot_state["commands"]
         ]
-        return BotStateResponse(commands=command_list, menu_button_type=bot_state["menu_button_type"])
+        response = BotStateResponse(commands=command_list, menu_button_type=bot_state["menu_button_type"])
+
+        if demo_server.on_action is not None:
+            await demo_server.on_action("get_state", demo_server.client)
+
+        return response
 
     @app.post("/api/message")
     async def send_message(req: TextMessageRequest) -> MessageResponse:
         async with demo_server.client.conversation(demo_server.peer, demo_server.timeout) as conv:
             await conv.send_message(req.text)
             response = await conv.get_response()
-        return await serialize_message(response, demo_server.file_store)
+        result = await serialize_message(response, demo_server.file_store)
+
+        if demo_server.on_action is not None:
+            await demo_server.on_action("send_message", demo_server.client)
+
+        return result
 
     @app.post("/api/document")
     async def send_document(file: UploadFile) -> MessageResponse:
-        return await _handle_file_upload(demo_server, file, force_document=True)
+        result = await _handle_file_upload(demo_server, file, force_document=True)
+
+        if demo_server.on_action is not None:
+            await demo_server.on_action("send_file", demo_server.client)
+
+        return result
 
     @app.post("/api/voice")
     async def send_voice(file: UploadFile) -> MessageResponse:
-        return await _handle_file_upload(demo_server, file, voice_note=True)
+        result = await _handle_file_upload(demo_server, file, voice_note=True)
+
+        if demo_server.on_action is not None:
+            await demo_server.on_action("send_file", demo_server.client)
+
+        return result
 
     @app.post("/api/photo")
     async def send_photo(file: UploadFile, caption: str = Form("")) -> MessageResponse:
-        return await _handle_file_upload(demo_server, file, caption=caption)
+        result = await _handle_file_upload(demo_server, file, caption=caption)
+
+        if demo_server.on_action is not None:
+            await demo_server.on_action("send_file", demo_server.client)
+
+        return result
 
     @app.post("/api/video_note")
     async def send_video_note(file: UploadFile) -> MessageResponse:
-        return await _handle_file_upload(demo_server, file, video_note=True)
+        result = await _handle_file_upload(demo_server, file, video_note=True)
+
+        if demo_server.on_action is not None:
+            await demo_server.on_action("send_file", demo_server.client)
+
+        return result
 
     @app.post("/api/invoice/pay")
     async def pay_invoice(req: InvoicePayRequest) -> MessageResponse:
         # Stars payments require ServerlessTelegramClient-specific method
         await demo_server.client.simulate_stars_payment(req.message_id)
         response = demo_server.client.pop_response()
-        return await serialize_message(response, demo_server.file_store)
+        result = await serialize_message(response, demo_server.file_store)
+
+        if demo_server.on_action is not None:
+            await demo_server.on_action("pay_stars", demo_server.client)
+
+        return result
 
     @app.post("/api/callback")
     async def handle_callback(req: CallbackRequest) -> MessageResponse:
@@ -92,7 +127,12 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
         # Click button and get response - ServerlessTelegramClient provides the response
         response = await msg.click(data=req.data.encode())
-        return await serialize_message(response, demo_server.file_store)
+        result = await serialize_message(response, demo_server.file_store)
+
+        if demo_server.on_action is not None:
+            await demo_server.on_action("click_button", demo_server.client)
+
+        return result
 
     @app.post("/api/reset")
     async def reset() -> dict[str, str]:
@@ -103,9 +143,9 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
         await demo_server.client.disconnect()
         await demo_server.client.connect()
 
-        # Call custom reset callback if provided
-        if demo_server.on_reset is not None:
-            await demo_server.on_reset(demo_server.client)
+        # Call custom action callback if provided
+        if demo_server.on_action is not None:
+            await demo_server.on_action("reset", demo_server.client)
 
         return {"status": "ok"}
 

@@ -1,10 +1,11 @@
 """Unit tests for the demo server implementation."""
 
+import asyncio
 from unittest.mock import Mock  # noqa: TID251
 
 import pytest
 
-from tg_auto_test.demo_ui.server.demo_server import DemoServer, create_demo_app
+from tg_auto_test.demo_ui.server.demo_server import DemoClientProtocol, DemoServer, create_demo_app
 from tg_auto_test.demo_ui.server.file_store import FileStore
 
 
@@ -101,3 +102,26 @@ def test_create_demo_app_factory() -> None:
 
     with pytest.raises(ValueError, match="Peer must be specified"):
         create_demo_app(client=mock_client, peer="")
+
+
+def test_demo_server_on_action_callback() -> None:
+    """Test that on_action callback is stored correctly."""
+    mock_client = Mock()
+
+    async def mock_callback(action: str, client: DemoClientProtocol) -> None:
+        # Mock callback for testing - must be async to match the protocol
+        await asyncio.sleep(0)  # Make it properly async
+        assert isinstance(action, str)
+        assert client is not None
+
+    server = DemoServer(mock_client, "test_bot", on_action=mock_callback)
+
+    assert server.on_action == mock_callback
+
+
+def test_demo_server_without_on_action_callback() -> None:
+    """Test that on_action callback defaults to None."""
+    mock_client = Mock()
+    server = DemoServer(mock_client, "test_bot")
+
+    assert server.on_action is None

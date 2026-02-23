@@ -26,6 +26,7 @@ build_test_application  # Helper function in tests/unit/helpers_ptb_app.py
 # Demo UI server - route handlers are dynamically registered
 menu_button_type  # Pydantic model field
 create_demo_app  # Factory function for demo apps
+on_action  # Public API callback parameter
 index  # FastAPI route handler
 serve_file  # FastAPI route handler
 get_state  # FastAPI route handler
