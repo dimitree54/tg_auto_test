@@ -21,6 +21,7 @@ class StubTelegramRequest(CommandMenuMixin, MediaMixin, BaseRequest):
         self.file_store: dict[str, FileData] = {}
         self._next_message_id = 1
         self._generated_file_id_counter = 1
+        self._next_poll_id = 1
         self._scoped_commands: dict[str, list[dict[str, str]]] = {}
         self._menu_button: dict[str, str] | None = None
         self._bot_username = bot_username
@@ -42,6 +43,7 @@ class StubTelegramRequest(CommandMenuMixin, MediaMixin, BaseRequest):
             "getChatMenuButton": self._handle_get_chat_menu_button,
             "answerCallbackQuery": self._handle_answer_callback_query,
             "editMessageText": self._handle_edit_message_text,
+            "sendPoll": self._handle_send_poll,
         }
 
     @property

@@ -11,6 +11,7 @@ from tg_auto_test.test_utils.models import FileData, TelegramApiCall
 class _MediaHost(Protocol):
     calls: list[TelegramApiCall]
     file_store: dict[str, FileData]
+    _next_poll_id: int
 
     def _base_message(self, parameters: dict[str, str]) -> dict[str, JsonValue]: ...
 
@@ -67,6 +68,41 @@ class MediaMixin:
             base["length"] = w
             base["duration"] = max(1, int(round(dur)))
             msg["video_note"] = base
+        return self._ok_response(msg)
+
+    def _handle_send_poll(self: _MediaHost, parameters: dict[str, str]) -> tuple[int, bytes]:
+        msg: dict[str, JsonValue] = self._base_message(parameters)
+
+        poll_id = f"poll_{self._next_poll_id}"
+        self._next_poll_id += 1
+
+        options_json = parameters["options"]
+        options_list = json.loads(options_json)
+
+        # Options can be either list of strings or list of InputPollOption objects
+        if not isinstance(options_list, list):
+            raise ValueError("Poll options must be a list")
+
+        poll_options = []
+        for i, option in enumerate(options_list):
+            if isinstance(option, str):
+                poll_options.append({"text": option, "voter_count": 0})
+            elif isinstance(option, dict) and "text" in option:
+                poll_options.append({"text": option["text"], "voter_count": 0})
+            else:
+                raise ValueError("Poll options must be strings or objects with 'text' field")
+
+        poll: dict[str, JsonValue] = {
+            "id": poll_id,
+            "question": parameters["question"],
+            "options": poll_options,
+            "total_voter_count": 0,
+            "is_closed": False,
+            "is_anonymous": parameters.get("is_anonymous", "true") == "true",
+            "type": parameters.get("type", "regular"),
+            "allows_multiple_answers": False,
+        }
+        msg["poll"] = poll
         return self._ok_response(msg)
 
 

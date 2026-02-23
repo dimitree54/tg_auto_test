@@ -13,10 +13,12 @@ from telethon.tl.types import (
     DocumentAttributeAudio,
     DocumentAttributeVideo,
     MessageMediaInvoice,
+    MessageMediaPoll,
     Photo,
 )
 
 from tg_auto_test.test_utils.json_types import JsonValue
+from tg_auto_test.test_utils.model_helpers import build_poll_media
 
 ReplyMarkup = dict[str, JsonValue]
 ClickCallback = Callable[[int, str], Awaitable["ServerlessMessage"]]
@@ -73,6 +75,7 @@ class ServerlessMessage:
     media_photo: Photo | None = None
     media_document: Document | None = None
     invoice_data: MessageMediaInvoice | None = None
+    poll_data: JsonValue | None = None
     _raw_bytes: bytes = b""
     _file_store: dict[str, FileData] = field(default_factory=dict, repr=False)
     response_file_id: str = ""
@@ -130,6 +133,11 @@ class ServerlessMessage:
     def invoice(self) -> MessageMediaInvoice | None:
         """Invoice details if this is a payment request."""
         return self.invoice_data
+
+    @property
+    def poll(self) -> MessageMediaPoll | None:
+        """Poll details if this is a poll message."""
+        return build_poll_media(self.poll_data)
 
     @property
     def buttons(self) -> list[list[ServerlessButton]] | None:

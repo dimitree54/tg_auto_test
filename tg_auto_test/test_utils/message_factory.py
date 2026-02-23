@@ -13,6 +13,7 @@ from tg_auto_test.test_utils.media_metadata import audio_duration_seconds, mp4_d
 from tg_auto_test.test_utils.media_types import MEDIA_PARAM_KEY
 from tg_auto_test.test_utils.message_factory_invoice import build_invoice_message, message_id_from_result
 from tg_auto_test.test_utils.message_factory_media import image_dimensions, make_document
+from tg_auto_test.test_utils.message_factory_poll import build_poll_message
 from tg_auto_test.test_utils.models import FileData, ReplyMarkup, ServerlessMessage, TelegramApiCall
 
 
@@ -25,6 +26,8 @@ def build_serverless_message(
         return _build_text_message(call, message_id)
     if call.api_method == "sendInvoice":
         return build_invoice_message(call)
+    if call.api_method == "sendPoll":
+        return build_poll_message(call)
 
     param_key = MEDIA_PARAM_KEY.get(call.api_method)
     if param_key is None:

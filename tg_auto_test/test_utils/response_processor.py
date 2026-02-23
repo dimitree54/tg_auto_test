@@ -13,6 +13,7 @@ _MESSAGE_METHODS = frozenset({
     "sendPhoto",
     "sendVideoNote",
     "sendInvoice",
+    "sendPoll",
     "editMessageText",
 })
 
