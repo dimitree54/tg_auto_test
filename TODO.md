@@ -79,6 +79,38 @@ Categorized backlog of planned features and improvements for tg-auto-test.
 - Load testing simulation with multiple concurrent users
 - Memory usage profiling for long-running tests
 
+## Demo UI enhancements
+
+**Reply markup coverage gaps:**
+- URL button support — handle `InlineKeyboardButtonUrl` buttons
+- Switch inline button support — handle `InlineKeyboardButtonSwitchInlineQuery*` buttons
+- Login URL button support — handle `InlineKeyboardButtonLoginUrl` buttons
+- Web app button support — handle `InlineKeyboardButtonWebApp` buttons
+
+**Message management:**
+- Message edit tracking — distinguish between new messages and edits
+- Message history — maintain conversation history in UI
+- Message search/filtering — find specific messages in conversation
+- Message export — save conversation logs
+
+**Multi-chat support:**
+- Multiple chat tabs — test bot in different chat contexts
+- Group chat simulation — test with multiple virtual participants
+- Channel testing — test bot in broadcast channel context
+- Chat switching — seamless switching between different peer types
+
+**Authentication and security:**
+- Optional authentication layer — basic auth for shared development
+- CORS configuration — configurable cross-origin settings
+- Rate limiting — prevent abuse in shared environments
+- Access logging — track demo UI usage
+
+**Payments and commerce:**
+- Telethon mode payments — implement Stars payment support for real clients
+- Payment history — track and review payment interactions
+- Multiple payment scenarios — success/failure simulation
+- Shipping option testing — for physical goods invoices
+
 ## Architecture improvements
 
 **Plugin system:**
