@@ -11,9 +11,9 @@ from fastapi.staticfiles import StaticFiles
 from tg_auto_test.demo_ui.server.file_store import FileStore
 from tg_auto_test.demo_ui.server.routes import register_routes
 
-# Expose asset paths for consumers
-STATIC_DIR = Path(__file__).parent / "static"
-TEMPLATES_DIR = Path(__file__).parent / "templates"
+# Internal asset paths
+_STATIC_DIR = Path(__file__).parent / "static"
+_TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 
 class DemoServer:
@@ -51,19 +51,19 @@ class DemoServer:
         yield
         await self.client.disconnect()
 
-    def create_app(self, static_dir: Path | None = None, templates_dir: Path | None = None) -> FastAPI:
+    def create_app(self) -> FastAPI:
         """Create and configure FastAPI application."""
         app = FastAPI(lifespan=self.lifespan)
 
         # Store server instance in app state for endpoint access
         app.state.demo_server = self
 
-        # Mount static files if directory provided
-        if static_dir and static_dir.exists():
-            app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+        # Mount static files using library's own assets
+        if _STATIC_DIR.exists():
+            app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
-        # Register routes
-        register_routes(app, self, templates_dir)
+        # Register routes using library's own templates
+        register_routes(app, self, _TEMPLATES_DIR)
 
         return app
 
@@ -73,8 +73,6 @@ def create_demo_app(
     peer: str,
     *,
     timeout: float = 10.0,
-    static_dir: Path | None = None,
-    templates_dir: Path | None = None,
     on_reset: Callable[[Any], Any] | None = None,  # noqa: ANN401
 ) -> FastAPI:
     """Factory function to create a demo FastAPI app."""
@@ -84,4 +82,4 @@ def create_demo_app(
         timeout=timeout,
         on_reset=on_reset,
     )
-    return server.create_app(static_dir=static_dir, templates_dir=templates_dir)
+    return server.create_app()
