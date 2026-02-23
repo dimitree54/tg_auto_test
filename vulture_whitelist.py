@@ -22,6 +22,7 @@ click_inline_button
 clear_bot_state
 get_scoped_commands
 get_menu_button
+process_poll_answer
 
 # Test helpers
 build_test_application  # Helper function in tests/unit/helpers_ptb_app.py
@@ -41,3 +42,5 @@ send_video_note  # FastAPI route handler
 pay_invoice  # FastAPI route handler
 handle_callback  # FastAPI route handler
 reset  # FastAPI route handler
+vote_poll  # FastAPI route handler
+handle_file_upload  # File upload helper function

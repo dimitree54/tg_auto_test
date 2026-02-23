@@ -1,0 +1,85 @@
+import { votePoll } from '../api/bot';
+import type { MessageResponse } from '../types/api';
+import { errorMessage } from '../utils/errors';
+import { escapeHtml } from '../utils/escape';
+import { fmtTime } from '../utils/time';
+
+import { getEls, setInputsDisabled } from './dom';
+import { addTextMessage } from './messages';
+import { hideTyping, showTyping } from './typing';
+
+type BubbleType = 'sent' | 'received';
+
+function metaHtml(): string {
+  return `<span class="meta">${fmtTime(new Date())}</span>`;
+}
+
+function scrollBottom(): void {
+  const els = getEls();
+  els.messagesEl.scrollTop = els.messagesEl.scrollHeight;
+}
+
+function createBubble(type: BubbleType): HTMLDivElement {
+  const el = document.createElement('div');
+  el.className = `message ${type}`;
+  if (type === 'received') {
+    el.innerHTML = '<div class="sender">Bot</div>';
+  }
+  return el;
+}
+
+export function addPollMessage(data: MessageResponse, type: BubbleType): void {
+  const els = getEls();
+  const el = createBubble(type);
+
+  // Add poll question as heading
+  if (data.poll_question) {
+    const questionEl = document.createElement('h4');
+    questionEl.className = 'poll-question';
+    questionEl.textContent = data.poll_question;
+    el.appendChild(questionEl);
+  }
+
+  // Add poll options as clickable buttons
+  if (data.poll_options && data.poll_id) {
+    const optionsEl = document.createElement('div');
+    optionsEl.className = 'poll-options';
+
+    data.poll_options.forEach((option, index) => {
+      const button = document.createElement('button');
+      button.className = 'poll-option-btn';
+      button.textContent = option.text;
+      button.onclick = () => handlePollVote(data.poll_id!, [index]);
+      optionsEl.appendChild(button);
+    });
+
+    el.appendChild(optionsEl);
+  }
+
+  el.innerHTML += metaHtml();
+  els.messagesEl.appendChild(el);
+  scrollBottom();
+}
+
+async function handlePollVote(pollId: string, optionIds: number[]): Promise<void> {
+  const els = getEls();
+  
+  try {
+    setInputsDisabled(true);
+    showTyping();
+
+    // Call the API to vote
+    const response = await votePoll(pollId, optionIds);
+
+    // Show the bot's response as a text message
+    if (response.text) {
+      addTextMessage(response.text, 'received');
+    }
+
+  } catch (error) {
+    errorMessage(`Poll vote failed: ${String(error)}`);
+  } finally {
+    hideTyping();
+    setInputsDisabled(false);
+  }
+}

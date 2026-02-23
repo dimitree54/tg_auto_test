@@ -1,12 +1,14 @@
 """Unit tests for the demo server implementation."""
 
 import asyncio
-from unittest.mock import Mock  # noqa: TID251
+from unittest.mock import AsyncMock, Mock  # noqa: TID251
 
+from fastapi.testclient import TestClient
 import pytest
 
 from tg_auto_test.demo_ui.server.demo_server import DemoClientProtocol, DemoServer, create_demo_app
 from tg_auto_test.demo_ui.server.file_store import FileStore
+from tg_auto_test.test_utils.models import ServerlessMessage
 
 
 class TestFileStore:
@@ -125,3 +127,32 @@ def test_demo_server_without_on_action_callback() -> None:
     server = DemoServer(mock_client, "test_bot")
 
     assert server.on_action is None
+
+
+def test_poll_vote_endpoint() -> None:
+    """Test the poll vote endpoint."""
+    # Create mock client with process_poll_answer method
+    mock_client = Mock()
+    mock_client.connect = AsyncMock()
+    mock_client.disconnect = AsyncMock()
+
+    # Mock the poll answer response
+    response_message = ServerlessMessage(id=456, text="You voted for: Red")
+    mock_client.process_poll_answer = AsyncMock(return_value=response_message)
+
+    # Create demo server and app
+    server = DemoServer(mock_client, "test_bot")
+    app = server.create_app()
+
+    # Test the endpoint
+    with TestClient(app) as client:
+        response = client.post("/api/poll/vote", json={"poll_id": "poll_123", "option_ids": [0]})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["type"] == "text"
+    assert data["text"] == "You voted for: Red"
+    assert data["message_id"] == 456
+
+    # Verify the client method was called correctly
+    mock_client.process_poll_answer.assert_called_once_with("poll_123", [0])

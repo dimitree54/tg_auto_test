@@ -32,3 +32,7 @@ export async function resetConversation(): Promise<{ status: string }> {
 export async function getState(): Promise<BotStateResponse> {
   return await getJson<BotStateResponse>('/api/state');
 }
+
+export async function votePoll(pollId: string, optionIds: number[]): Promise<MessageResponse> {
+  return await postJson<MessageResponse>('/api/poll/vote', { poll_id: pollId, option_ids: optionIds });
+}

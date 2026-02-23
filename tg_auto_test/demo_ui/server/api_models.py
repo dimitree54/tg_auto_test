@@ -26,8 +26,13 @@ class BotStateResponse(BaseModel):
     menu_button_type: str
 
 
+class PollVoteRequest(BaseModel):
+    poll_id: str
+    option_ids: list[int]
+
+
 class MessageResponse(BaseModel):
-    type: str  # "text" | "invoice" | "document" | "voice" | "photo" | "video_note"
+    type: str  # "text" | "invoice" | "document" | "voice" | "photo" | "video_note" | "poll"
     text: str = ""
     file_id: str = ""
     filename: str = ""
@@ -37,3 +42,6 @@ class MessageResponse(BaseModel):
     currency: str = ""
     total_amount: int = 0
     reply_markup: dict | None = None
+    poll_question: str = ""
+    poll_options: list[dict[str, int | str]] = []
+    poll_id: str = ""

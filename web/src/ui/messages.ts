@@ -8,6 +8,7 @@ import { fmtTime, timeStr } from '../utils/time';
 import { getEls, setInputsDisabled } from './dom';
 import { addInlineKeyboard } from './keyboards_inline';
 import { showReplyKeyboard } from './keyboards_reply';
+import { addPollMessage } from './poll';
 import { hideTyping, showTyping } from './typing';
 
 type BubbleType = 'sent' | 'received';
@@ -283,6 +284,11 @@ export function renderBotResponse(data: MessageResponse): void {
 
   if (data.type === 'document') {
     addDocumentMessage(data.filename || '', `/api/file/${data.file_id || ''}`, 'received');
+    return;
+  }
+
+  if (data.type === 'poll') {
+    addPollMessage(data, 'received');
     return;
   }
 

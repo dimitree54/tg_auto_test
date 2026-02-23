@@ -1,4 +1,4 @@
-export type MessageType = 'text' | 'invoice' | 'document' | 'voice' | 'photo' | 'video_note';
+export type MessageType = 'text' | 'invoice' | 'document' | 'voice' | 'photo' | 'video_note' | 'poll';
 
 export type FileUploadType = 'document' | 'voice' | 'photo' | 'video_note';
 
@@ -31,6 +31,9 @@ export interface MessageResponse {
   currency?: string;
   total_amount?: number;
   reply_markup?: ReplyMarkup | null;
+  poll_question?: string;
+  poll_options?: Array<{ text: string; voter_count: number }>;
+  poll_id?: string;
 }
 
 export interface BotCommandInfo {

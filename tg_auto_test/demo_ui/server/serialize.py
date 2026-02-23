@@ -9,6 +9,33 @@ from tg_auto_test.test_utils.models import ServerlessMessage
 
 async def serialize_message(message: ServerlessMessage, file_store: FileStore) -> MessageResponse:
     """Convert a ServerlessMessage to MessageResponse for the API."""
+    # Handle poll messages (check poll_data to avoid creating Telethon objects)
+    if message.poll_data is not None:
+        poll_data = message.poll_data
+        # Extract poll_id from the raw poll data
+        poll_id = str(poll_data.get("id", "")) if isinstance(poll_data, dict) else ""
+
+        # Get question and options from poll data
+        question = ""
+        options: list[dict[str, int | str]] = []
+
+        if isinstance(poll_data, dict):
+            question = str(poll_data.get("question", ""))
+            if "answers" in poll_data and isinstance(poll_data["answers"], list):
+                options = [
+                    {"text": str(option.get("text", "")), "voter_count": 0}
+                    for option in poll_data["answers"]
+                    if isinstance(option, dict)
+                ]
+
+        return MessageResponse(
+            type="poll",
+            message_id=message.id,
+            poll_question=question,
+            poll_options=options,
+            poll_id=poll_id,
+        )
+
     # Handle invoice messages
     if message.invoice is not None:
         invoice = message.invoice

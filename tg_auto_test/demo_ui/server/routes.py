@@ -12,9 +12,11 @@ from tg_auto_test.demo_ui.server.api_models import (
     CallbackRequest,
     InvoicePayRequest,
     MessageResponse,
+    PollVoteRequest,
     TextMessageRequest,
 )
-from tg_auto_test.demo_ui.server.serialize import serialize_message, store_response_file
+from tg_auto_test.demo_ui.server.serialize import serialize_message
+from tg_auto_test.demo_ui.server.upload_handlers import handle_file_upload
 
 if TYPE_CHECKING:
     from tg_auto_test.demo_ui.server.demo_server import DemoServer
@@ -72,7 +74,7 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
     @app.post("/api/document")
     async def send_document(file: UploadFile) -> MessageResponse:
-        result = await _handle_file_upload(demo_server, file, force_document=True)
+        result = await handle_file_upload(demo_server, file, force_document=True)
 
         if demo_server.on_action is not None:
             await demo_server.on_action("send_file", demo_server.client)
@@ -81,7 +83,7 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
     @app.post("/api/voice")
     async def send_voice(file: UploadFile) -> MessageResponse:
-        result = await _handle_file_upload(demo_server, file, voice_note=True)
+        result = await handle_file_upload(demo_server, file, voice_note=True)
 
         if demo_server.on_action is not None:
             await demo_server.on_action("send_file", demo_server.client)
@@ -90,7 +92,7 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
     @app.post("/api/photo")
     async def send_photo(file: UploadFile, caption: str = Form("")) -> MessageResponse:
-        result = await _handle_file_upload(demo_server, file, caption=caption)
+        result = await handle_file_upload(demo_server, file, caption=caption)
 
         if demo_server.on_action is not None:
             await demo_server.on_action("send_file", demo_server.client)
@@ -99,7 +101,7 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
     @app.post("/api/video_note")
     async def send_video_note(file: UploadFile) -> MessageResponse:
-        result = await _handle_file_upload(demo_server, file, video_note=True)
+        result = await handle_file_upload(demo_server, file, video_note=True)
 
         if demo_server.on_action is not None:
             await demo_server.on_action("send_file", demo_server.client)
@@ -149,47 +151,19 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
         return {"status": "ok"}
 
+    @app.post("/api/poll/vote")
+    async def vote_poll(request: PollVoteRequest) -> MessageResponse:
+        """Handle poll vote by calling process_poll_answer."""
+        demo_server = app.state.demo_server
 
-async def _handle_file_upload(
-    demo_server: "DemoServer",
-    file: UploadFile,
-    *,
-    caption: str = "",
-    force_document: bool = False,
-    voice_note: bool = False,
-    video_note: bool = False,
-) -> MessageResponse:
-    """Handle file upload for any media type."""
-    data = await file.read()
-    filename = file.filename or "file"
-    content_type = file.content_type or "application/octet-stream"
+        # Call process_poll_answer on the client
+        response = await demo_server.client.process_poll_answer(request.poll_id, request.option_ids)
 
-    async with demo_server.client.conversation(demo_server.peer, demo_server.timeout) as conv:
-        # Send bytes directly using Telethon API
-        await conv.send_file(
-            data,
-            caption=caption,
-            force_document=force_document,
-            voice_note=voice_note,
-            video_note=video_note,
-        )
-        response = await conv.get_response()
+        # Serialize the bot response
+        result = await serialize_message(response, demo_server.file_store)
 
-    # Determine response file type
-    response_type = "document"
-    if voice_note:
-        response_type = "voice"
-    elif video_note:
-        response_type = "video_note"
-    elif not force_document and content_type.startswith("image/"):
-        response_type = "photo"
+        # Call custom action callback if provided
+        if demo_server.on_action is not None:
+            await demo_server.on_action("poll_vote", demo_server.client)
 
-    file_id = response.response_file_id or filename
-    stored_filename = await store_response_file(file_id, response, demo_server.file_store, filename, content_type, data)
-
-    return MessageResponse(
-        type=response_type,
-        file_id=file_id,
-        filename=stored_filename,
-        message_id=response.id,
-    )
+        return result

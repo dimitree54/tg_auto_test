@@ -1,67 +1,70 @@
-async function I(e) {
+async function _(e) {
   return await e.json();
 }
 function D(e, t, n) {
   return new Error(`${e} ${t} failed: ${n.status} ${n.statusText}`);
 }
-async function le(e) {
+async function re(e) {
   const t = await fetch(e, { method: "GET" });
   if (!t.ok) throw D("GET", e, t);
-  return await I(t);
+  return await _(t);
 }
-async function q(e, t) {
+async function U(e, t) {
   const n = await fetch(e, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(t)
   });
   if (!n.ok) throw D("POST", e, n);
-  return await I(n);
+  return await _(n);
 }
 async function de(e) {
   const t = await fetch(e, { method: "POST" });
   if (!t.ok) throw D("POST", e, t);
-  return await I(t);
+  return await _(t);
 }
 async function ue(e, t) {
   const n = await fetch(e, { method: "POST", body: t });
   if (!n.ok) throw D("POST", e, n);
-  return await I(n);
+  return await _(n);
 }
 async function Q(e) {
-  return await q("/api/message", { text: e });
+  return await U("/api/message", { text: e });
 }
 async function me(e, t, n) {
   const s = new FormData();
   return s.append("file", e), n && s.append("caption", n), await ue(`/api/${t}`, s);
 }
 async function pe(e, t) {
-  return await q("/api/callback", { message_id: e, data: t });
+  return await U("/api/callback", { message_id: e, data: t });
 }
 async function fe(e) {
-  return await q("/api/invoice/pay", { message_id: e });
+  return await U("/api/invoice/pay", { message_id: e });
 }
 async function ge() {
   return await de("/api/reset");
 }
 async function ve() {
-  return await le("/api/state");
+  return await re("/api/state");
 }
-const l = {
+async function Ee(e, t) {
+  return await U("/api/poll/vote", { poll_id: e, option_ids: t });
+}
+const d = {
   sending: !1,
   stagedFiles: []
 };
-let H = null;
+let F = null;
 function v(e) {
   const t = document.getElementById(e);
   if (!t) throw new Error(`Missing element: #${e}`);
   return t;
 }
-function r() {
-  if (H) return H;
+function l() {
+  if (F) return F;
   const e = document.querySelector(".chat-container");
   if (!e) throw new Error("Missing element: .chat-container");
-  return H = {
+  return F = {
     messagesEl: v("messages"),
     inputEl: v("msgInput"),
     sendBtn: v("sendBtn"),
@@ -74,43 +77,43 @@ function r() {
     menuBtn: v("menuBtn"),
     commandPanelEl: v("commandPanel"),
     chatContainer: e
-  }, H;
+  }, F;
 }
-function k(e) {
-  const t = r();
+function C(e) {
+  const t = l();
   t.sendBtn.disabled = e, t.attachBtn.disabled = e;
 }
-const w = {
+const T = {
   botCommands: [],
   menuButtonType: "default"
 };
-let f = !1, C = "menu", y = [], g = -1, O = null;
-function ye(e) {
-  O = e;
-  const t = r();
+let f = !1, w = "menu", E = [], g = -1, A = null;
+function he(e) {
+  A = e;
+  const t = l();
   t.menuBtn.addEventListener("click", (n) => {
-    if (n.preventDefault(), !l.sending && t.menuBtn.classList.contains("visible")) {
-      if (f && C === "menu") {
-        E(), A();
+    if (n.preventDefault(), !d.sending && t.menuBtn.classList.contains("visible")) {
+      if (f && w === "menu") {
+        h(), K();
         return;
       }
       z();
     }
   }), t.inputEl.addEventListener("input", () => {
-    A();
+    K();
   }), t.inputEl.addEventListener("keydown", (n) => {
     if (f) {
       if (n.key === "Escape") {
-        n.preventDefault(), E();
+        n.preventDefault(), h();
         return;
       }
-      if (y.length > 0) {
+      if (E.length > 0) {
         if (n.key === "ArrowDown") {
-          n.preventDefault(), G(1);
+          n.preventDefault(), V(1);
           return;
         }
         if (n.key === "ArrowUp") {
-          n.preventDefault(), G(-1);
+          n.preventDefault(), V(-1);
           return;
         }
       }
@@ -119,148 +122,148 @@ function ye(e) {
   }), document.addEventListener("click", (n) => {
     if (!f) return;
     const s = n.target;
-    s instanceof Node && (t.commandPanelEl.contains(s) || t.menuBtn.contains(s) || t.inputEl.contains(s) || E());
+    s instanceof Node && (t.commandPanelEl.contains(s) || t.menuBtn.contains(s) || t.inputEl.contains(s) || h());
   });
 }
-function E() {
-  const e = r();
-  f = !1, C = "menu", y = [], g = -1, e.commandPanelEl.classList.remove("visible"), e.commandPanelEl.innerHTML = "";
+function h() {
+  const e = l();
+  f = !1, w = "menu", E = [], g = -1, e.commandPanelEl.classList.remove("visible"), e.commandPanelEl.innerHTML = "";
 }
 function z() {
-  Y("menu", w.botCommands, "Commands");
+  Y("menu", T.botCommands, "Commands");
 }
-function A() {
-  if (f && C === "menu") return;
-  const e = Ee();
-  if (e === null || w.botCommands.length === 0) {
-    f && C === "slash" && E();
+function K() {
+  if (f && w === "menu") return;
+  const e = ye();
+  if (e === null || T.botCommands.length === 0) {
+    f && w === "slash" && h();
     return;
   }
   const t = [];
-  for (const n of w.botCommands)
+  for (const n of T.botCommands)
     n.command && n.command.indexOf(e) === 0 && t.push(n);
   if (t.length === 0) {
-    f && C === "slash" && E();
+    f && w === "slash" && h();
     return;
   }
   Y("slash", t, e ? `Commands matching "/${e}"` : "Commands");
 }
-function Ee() {
-  const { inputEl: e } = r(), t = e.value || "";
+function ye() {
+  const { inputEl: e } = l(), t = e.value || "";
   return !t.startsWith("/") || /\s/.test(t) ? null : t.slice(1);
 }
 function Y(e, t, n) {
-  const s = r();
-  C = e, y = Array.isArray(t) ? t : [], g = y.length > 0 ? 0 : -1, f = !0, s.commandPanelEl.innerHTML = "";
-  const o = document.createElement("div");
-  o.className = "cp-card";
+  const s = l();
+  w = e, E = Array.isArray(t) ? t : [], g = E.length > 0 ? 0 : -1, f = !0, s.commandPanelEl.innerHTML = "";
   const i = document.createElement("div");
-  if (i.className = "cp-header", i.textContent = n, o.appendChild(i), y.length === 0) {
+  i.className = "cp-card";
+  const o = document.createElement("div");
+  if (o.className = "cp-header", o.textContent = n, i.appendChild(o), E.length === 0) {
     const a = document.createElement("div");
-    a.className = "cp-empty", a.textContent = "No commands.", o.appendChild(a);
+    a.className = "cp-empty", a.textContent = "No commands.", i.appendChild(a);
   } else
-    for (const [a, d] of y.entries()) {
+    for (const [a, r] of E.entries()) {
       const u = document.createElement("button");
       u.type = "button", u.className = `cp-item${a === g ? " selected" : ""}`, u.dataset.index = String(a), u.addEventListener("click", () => {
         const m = Number.parseInt(u.dataset.index || "", 10);
         Number.isFinite(m) && (g = m, Z(), ee());
       });
       const c = document.createElement("div");
-      if (c.className = "cp-cmd", c.textContent = `/${d.command || "?"}`, u.appendChild(c), d.description) {
+      if (c.className = "cp-cmd", c.textContent = `/${r.command || "?"}`, u.appendChild(c), r.description) {
         const m = document.createElement("div");
-        m.className = "cp-desc", m.textContent = d.description, u.appendChild(m);
+        m.className = "cp-desc", m.textContent = r.description, u.appendChild(m);
       }
-      o.appendChild(u);
+      i.appendChild(u);
     }
-  s.commandPanelEl.appendChild(o), s.commandPanelEl.classList.add("visible");
+  s.commandPanelEl.appendChild(i), s.commandPanelEl.classList.add("visible");
 }
 function Z() {
-  const t = r().commandPanelEl.querySelectorAll(".cp-item");
+  const t = l().commandPanelEl.querySelectorAll(".cp-item");
   for (const [n, s] of t.entries())
     n === g ? s.classList.add("selected") : s.classList.remove("selected");
 }
-function G(e) {
-  !f || y.length === 0 || (g = (g + e) % y.length, g < 0 && (g += y.length), Z());
+function V(e) {
+  !f || E.length === 0 || (g = (g + e) % E.length, g < 0 && (g += E.length), Z());
 }
 function ee() {
-  if (!f || g < 0 || g >= y.length) return !1;
-  const t = y[g].command || "";
+  if (!f || g < 0 || g >= E.length) return !1;
+  const t = E[g].command || "";
   if (!t) return !1;
-  const { inputEl: n } = r();
-  return C === "slash" ? (n.value = `/${t} `, E(), n.focus(), !0) : (E(), O && O(`/${t}`), !0);
+  const { inputEl: n } = l();
+  return w === "slash" ? (n.value = `/${t} `, h(), n.focus(), !0) : (h(), A && A(`/${t}`), !0);
 }
 function te() {
-  const e = r();
-  w.menuButtonType === "commands" && w.botCommands.length > 0 ? e.menuBtn.classList.add("visible") : (e.menuBtn.classList.remove("visible"), f && C === "menu" && E());
+  const e = l();
+  T.menuButtonType === "commands" && T.botCommands.length > 0 ? e.menuBtn.classList.add("visible") : (e.menuBtn.classList.remove("visible"), f && w === "menu" && h());
 }
 async function J() {
   try {
     const e = await ve();
-    w.botCommands = Array.isArray(e.commands) ? e.commands : [], w.menuButtonType = e.menu_button_type || "default", te(), f && C === "menu" ? z() : f || A();
+    T.botCommands = Array.isArray(e.commands) ? e.commands : [], T.menuButtonType = e.menu_button_type || "default", te(), f && w === "menu" ? z() : f || K();
   } catch {
   }
 }
-function he() {
-  w.botCommands = [], w.menuButtonType = "default", te(), E();
+function be() {
+  T.botCommands = [], T.menuButtonType = "default", te(), h();
 }
-function be(e) {
+function Ce(e) {
   const t = e.type || "";
   return t.startsWith("image/") ? "photo" : t.startsWith("audio/") ? "voice" : t.startsWith("video/") ? "video_note" : "document";
 }
-function V(e) {
+function G(e) {
   const t = URL.createObjectURL(e);
-  l.stagedFiles.push({ file: e, type: be(e), localUrl: t }), _();
+  d.stagedFiles.push({ file: e, type: Ce(e), localUrl: t }), R();
 }
-function Ce(e) {
-  const t = l.stagedFiles[e];
-  t && (URL.revokeObjectURL(t.localUrl), l.stagedFiles.splice(e, 1), _());
-}
-function Le() {
-  for (const e of l.stagedFiles) URL.revokeObjectURL(e.localUrl);
-  l.stagedFiles = [], _();
+function Le(e) {
+  const t = d.stagedFiles[e];
+  t && (URL.revokeObjectURL(t.localUrl), d.stagedFiles.splice(e, 1), R());
 }
 function we() {
-  const e = [...l.stagedFiles];
-  return l.stagedFiles = [], _(), e;
+  for (const e of d.stagedFiles) URL.revokeObjectURL(e.localUrl);
+  d.stagedFiles = [], R();
 }
-function _() {
-  const e = r();
-  if (e.stagedFilesEl.innerHTML = "", l.stagedFiles.length === 0) {
+function Te() {
+  const e = [...d.stagedFiles];
+  return d.stagedFiles = [], R(), e;
+}
+function R() {
+  const e = l();
+  if (e.stagedFilesEl.innerHTML = "", d.stagedFiles.length === 0) {
     e.stagedFilesEl.classList.remove("visible");
     return;
   }
   e.stagedFilesEl.classList.add("visible");
-  for (let t = 0; t < l.stagedFiles.length; t++) {
-    const n = l.stagedFiles[t], s = document.createElement("div");
+  for (let t = 0; t < d.stagedFiles.length; t++) {
+    const n = d.stagedFiles[t], s = document.createElement("div");
     if (s.className = "staged-item", n.type === "photo") {
       const a = document.createElement("img");
       a.src = n.localUrl, a.alt = "Preview", s.appendChild(a);
     } else {
       const a = document.createElement("span");
       a.className = "staged-icon";
-      const d = {
+      const r = {
         voice: "&#127908;",
         video_note: "&#127909;"
       };
-      a.innerHTML = d[n.type] ?? "&#128196;", s.appendChild(a);
+      a.innerHTML = r[n.type] ?? "&#128196;", s.appendChild(a);
     }
-    const o = document.createElement("span");
-    o.className = "staged-name", o.textContent = n.file.name, s.appendChild(o);
-    const i = document.createElement("button");
-    i.className = "staged-remove", i.innerHTML = "&times;", i.dataset.index = String(t), i.addEventListener("click", () => {
-      const a = Number.parseInt(i.dataset.index || "", 10);
-      Number.isFinite(a) && Ce(a);
-    }), s.appendChild(i), e.stagedFilesEl.appendChild(s);
+    const i = document.createElement("span");
+    i.className = "staged-name", i.textContent = n.file.name, s.appendChild(i);
+    const o = document.createElement("button");
+    o.className = "staged-remove", o.innerHTML = "&times;", o.dataset.index = String(t), o.addEventListener("click", () => {
+      const a = Number.parseInt(o.dataset.index || "", 10);
+      Number.isFinite(a) && Le(a);
+    }), s.appendChild(o), e.stagedFilesEl.appendChild(s);
   }
 }
-function Te() {
-  const e = r();
+function ke() {
+  const e = l();
   e.attachBtn.addEventListener("click", () => {
-    l.sending || e.fileInput.click();
+    d.sending || e.fileInput.click();
   }), e.fileInput.addEventListener("change", () => {
     const t = e.fileInput.files;
     if (t && t.length > 0)
-      for (let n = 0; n < t.length; n++) V(t[n]);
+      for (let n = 0; n < t.length; n++) G(t[n]);
     e.fileInput.value = "", e.inputEl.focus();
   }), e.chatContainer.addEventListener("dragover", (t) => {
     t.preventDefault(), t.stopPropagation();
@@ -269,13 +272,13 @@ function Te() {
     t.preventDefault(), t.stopPropagation();
     const n = (s = t.dataTransfer) == null ? void 0 : s.files;
     if (n && n.length > 0)
-      for (let o = 0; o < n.length; o++) V(n[o]);
+      for (let i = 0; i < n.length; i++) G(n[i]);
   });
 }
-function S(e) {
+function N(e) {
   return e instanceof Error ? e.message : String(e);
 }
-function M(e) {
+function S(e) {
   const t = document.createElement("div");
   return t.textContent = e, t.innerHTML;
 }
@@ -283,96 +286,134 @@ function W() {
   const e = /* @__PURE__ */ new Date();
   return `${e.getHours().toString().padStart(2, "0")}:${e.getMinutes().toString().padStart(2, "0")}`;
 }
-function U(e) {
+function I(e) {
   if (!Number.isFinite(e) || e < 0) return "0:00";
   const t = Math.floor(e / 60), n = Math.floor(e % 60);
   return `${t}:${n < 10 ? "0" : ""}${n}`;
 }
 function B() {
-  const e = r();
+  const e = l();
   e.typingEl.classList.add("visible"), e.messagesEl.scrollTop = e.messagesEl.scrollHeight;
 }
-function h() {
-  r().typingEl.classList.remove("visible");
+function y() {
+  l().typingEl.classList.remove("visible");
 }
-function ke(e, t, n, s, o) {
-  const i = document.createElement("div");
-  i.className = "inline-keyboard";
+function $e(e, t, n, s, i) {
+  const o = document.createElement("div");
+  o.className = "inline-keyboard";
   for (const a of t) {
-    const d = document.createElement("div");
-    d.className = "ik-row";
+    const r = document.createElement("div");
+    r.className = "ik-row";
     for (const u of a) {
       const c = document.createElement("button");
       c.className = "ik-btn", c.textContent = u.text || "?", c.dataset.callbackData = u.callback_data || "", c.dataset.messageId = String(n), c.addEventListener("click", async () => {
         const m = c.dataset.callbackData || "", p = Number.parseInt(c.dataset.messageId || "0", 10);
-        if (!m || l.sending) return;
-        const x = c.closest(".inline-keyboard"), b = x ? x.querySelectorAll(".ik-btn") : [];
-        for (const T of b) T.disabled = !0;
-        l.sending = !0, k(!0), B();
+        if (!m || d.sending) return;
+        const M = c.closest(".inline-keyboard"), L = M ? M.querySelectorAll(".ik-btn") : [];
+        for (const k of L) k.disabled = !0;
+        d.sending = !0, C(!0), B();
         try {
-          const T = await pe(p, m);
-          h(), s(T);
-        } catch (T) {
-          h(), o(`[Callback error: ${S(T)}]`);
+          const k = await pe(p, m);
+          y(), s(k);
+        } catch (k) {
+          y(), i(`[Callback error: ${N(k)}]`);
         }
-        l.sending = !1, k(!1), r().inputEl.focus();
-      }), d.appendChild(c);
+        d.sending = !1, C(!1), l().inputEl.focus();
+      }), r.appendChild(c);
     }
-    i.appendChild(d);
+    o.appendChild(r);
   }
-  e.appendChild(i);
+  e.appendChild(o);
 }
-let K = null;
-function $e(e) {
-  K = e;
-}
+let q = null;
 function Ne(e) {
-  const t = r();
+  q = e;
+}
+function xe(e) {
+  const t = l();
   t.replyKeyboardEl.innerHTML = "";
   for (const n of e) {
     const s = document.createElement("div");
     s.className = "rk-row";
-    for (const o of n) {
-      const i = document.createElement("button");
-      i.className = "rk-btn", i.textContent = o.text || "?", i.addEventListener("click", () => {
-        const a = i.textContent || "";
-        a && (l.sending || (ne(), K && K(a)));
-      }), s.appendChild(i);
+    for (const i of n) {
+      const o = document.createElement("button");
+      o.className = "rk-btn", o.textContent = i.text || "?", o.addEventListener("click", () => {
+        const a = o.textContent || "";
+        a && (d.sending || (ne(), q && q(a)));
+      }), s.appendChild(o);
     }
     t.replyKeyboardEl.appendChild(s);
   }
   t.replyKeyboardEl.classList.add("visible"), t.messagesEl.scrollTop = t.messagesEl.scrollHeight;
 }
 function ne() {
-  const e = r();
+  const e = l();
   e.replyKeyboardEl.classList.remove("visible"), e.replyKeyboardEl.innerHTML = "";
 }
-function $() {
-  const e = r();
+function Me() {
+  return `<span class="meta">${I(/* @__PURE__ */ new Date())}</span>`;
+}
+function Se() {
+  const e = l();
   e.messagesEl.scrollTop = e.messagesEl.scrollHeight;
 }
-function N(e) {
+function Be(e) {
+  const t = document.createElement("div");
+  return t.className = `message ${e}`, t.innerHTML = '<div class="sender">Bot</div>', t;
+}
+function Pe(e, t) {
+  const n = l(), s = Be(t);
+  if (e.poll_question) {
+    const i = document.createElement("h4");
+    i.className = "poll-question", i.textContent = e.poll_question, s.appendChild(i);
+  }
+  if (e.poll_options && e.poll_id) {
+    const i = document.createElement("div");
+    i.className = "poll-options", e.poll_options.forEach((o, a) => {
+      const r = document.createElement("button");
+      r.className = "poll-option-btn", r.textContent = o.text, r.onclick = () => He(e.poll_id, [a]), i.appendChild(r);
+    }), s.appendChild(i);
+  }
+  s.innerHTML += Me(), n.messagesEl.appendChild(s), Se();
+}
+async function He(e, t) {
+  l();
+  try {
+    C(!0), B();
+    const n = await Ee(e, t);
+    n.text && b(n.text, "received");
+  } catch (n) {
+    N(`Poll vote failed: ${String(n)}`);
+  } finally {
+    y(), C(!1);
+  }
+}
+function $() {
+  const e = l();
+  e.messagesEl.scrollTop = e.messagesEl.scrollHeight;
+}
+function x(e) {
   const t = document.createElement("div");
   return t.className = `message ${e}`, e === "received" && (t.innerHTML = '<div class="sender">Bot</div>'), t;
 }
-function F() {
+function P() {
   return `<span class="meta">${W()}</span>`;
 }
-function L(e, t) {
-  const n = r(), s = N(t);
-  s.innerHTML += `<span class="text">${M(e)}</span>${F()}`, n.messagesEl.appendChild(s), $();
+function b(e, t) {
+  const n = l(), s = x(t);
+  s.innerHTML += `<span class="text">${S(e)}</span>${P()}`, n.messagesEl.appendChild(s), $();
 }
 function se(e, t, n) {
-  const s = r(), o = N(t), i = document.createElement("img");
-  i.className = "msg-photo", i.src = e, i.alt = "Photo", o.appendChild(i), n && (o.innerHTML += `<span class="caption">${M(n)}</span>`), o.innerHTML += F(), s.messagesEl.appendChild(o), i.addEventListener("load", () => $()), $();
+  const s = l(), i = x(t), o = document.createElement("img");
+  o.className = "msg-photo", o.src = e, o.alt = "Photo", i.appendChild(o), n && (i.innerHTML += `<span class="caption">${S(n)}</span>`), i.innerHTML += P(), s.messagesEl.appendChild(i), o.addEventListener("load", () => $()), $();
 }
 function ae(e, t, n) {
-  const s = r(), o = N(t), i = document.createElement("div");
-  i.className = "voice-player";
+  const s = l(), i = x(t), o = document.createElement("div");
+  o.className = "voice-player";
   const a = document.createElement("audio");
   a.src = e, a.preload = "metadata";
-  const d = document.createElement("button");
-  d.className = "vp-play", d.innerHTML = "&#9654;";
+  const r = document.createElement("button");
+  r.className = "vp-play", r.innerHTML = "&#9654;";
   const u = document.createElement("div");
   u.className = "vp-track";
   const c = document.createElement("div");
@@ -380,85 +421,85 @@ function ae(e, t, n) {
   const m = document.createElement("div");
   m.className = "vp-fill", c.appendChild(m);
   const p = document.createElement("span");
-  if (p.className = "vp-time", p.textContent = "0:00", u.appendChild(c), u.appendChild(p), i.appendChild(d), i.appendChild(u), o.appendChild(i), n) {
-    const b = document.createElement("span");
-    b.className = "caption", b.textContent = n, o.appendChild(b);
+  if (p.className = "vp-time", p.textContent = "0:00", u.appendChild(c), u.appendChild(p), o.appendChild(r), o.appendChild(u), i.appendChild(o), n) {
+    const L = document.createElement("span");
+    L.className = "caption", L.textContent = n, i.appendChild(L);
   }
-  const x = document.createElement("span");
-  x.className = "meta", x.textContent = W(), o.appendChild(x), s.messagesEl.appendChild(o), a.addEventListener("loadedmetadata", () => {
-    p.textContent = U(a.duration);
-  }), d.addEventListener("click", () => {
-    a.paused ? (a.play(), d.innerHTML = "&#9646;&#9646;") : (a.pause(), d.innerHTML = "&#9654;");
+  const M = document.createElement("span");
+  M.className = "meta", M.textContent = W(), i.appendChild(M), s.messagesEl.appendChild(i), a.addEventListener("loadedmetadata", () => {
+    p.textContent = I(a.duration);
+  }), r.addEventListener("click", () => {
+    a.paused ? (a.play(), r.innerHTML = "&#9646;&#9646;") : (a.pause(), r.innerHTML = "&#9654;");
   }), a.addEventListener("timeupdate", () => {
     if (a.duration) {
-      const b = a.currentTime / a.duration * 100;
-      m.style.width = `${b}%`, p.textContent = U(a.currentTime);
+      const L = a.currentTime / a.duration * 100;
+      m.style.width = `${L}%`, p.textContent = I(a.currentTime);
     }
   }), a.addEventListener("ended", () => {
-    d.innerHTML = "&#9654;", m.style.width = "0%", p.textContent = U(a.duration);
-  }), c.addEventListener("click", (b) => {
+    r.innerHTML = "&#9654;", m.style.width = "0%", p.textContent = I(a.duration);
+  }), c.addEventListener("click", (L) => {
     if (a.duration) {
-      const T = c.getBoundingClientRect(), re = (b.clientX - T.left) / T.width;
-      a.currentTime = re * a.duration;
+      const k = c.getBoundingClientRect(), ce = (L.clientX - k.left) / k.width;
+      a.currentTime = ce * a.duration;
     }
   }), $();
 }
 function ie(e, t, n) {
-  const s = r(), o = N(t), i = document.createElement("video");
-  i.className = "msg-video-note", i.src = e, i.controls = !0, i.playsInline = !0, o.appendChild(i), n && (o.innerHTML += `<span class="caption">${M(n)}</span>`), o.innerHTML += F(), s.messagesEl.appendChild(o), $();
+  const s = l(), i = x(t), o = document.createElement("video");
+  o.className = "msg-video-note", o.src = e, o.controls = !0, o.playsInline = !0, i.appendChild(o), n && (i.innerHTML += `<span class="caption">${S(n)}</span>`), i.innerHTML += P(), s.messagesEl.appendChild(i), $();
 }
 function oe(e, t, n, s) {
-  const o = r(), i = N(n), a = document.createElement("a");
-  a.className = "doc-attachment", a.href = t ? `${t}?download=1` : "#", a.download = e || "", a.innerHTML = `<span class="doc-icon">&#128196;</span><span class="doc-name">${M(e)}</span>`, i.appendChild(a), s && (i.innerHTML += `<span class="caption">${M(s)}</span>`), i.innerHTML += F(), o.messagesEl.appendChild(i), $();
+  const i = l(), o = x(n), a = document.createElement("a");
+  a.className = "doc-attachment", a.href = t ? `${t}?download=1` : "#", a.download = e || "", a.innerHTML = `<span class="doc-icon">&#128196;</span><span class="doc-name">${S(e)}</span>`, o.appendChild(a), s && (o.innerHTML += `<span class="caption">${S(s)}</span>`), o.innerHTML += P(), i.messagesEl.appendChild(o), $();
 }
-function R(e, t) {
+function O(e, t) {
   return e === "XTR" ? `${t}${t === 1 ? " Star" : " Stars"}` : `${t} ${e}`;
 }
-function xe(e, t) {
-  const n = r(), s = N(t), o = document.createElement("div");
-  o.className = "invoice-card";
-  const i = document.createElement("div");
-  if (i.className = "invoice-title", i.textContent = e.title || "Invoice", o.appendChild(i), e.description) {
+function Fe(e, t) {
+  const n = l(), s = x(t), i = document.createElement("div");
+  i.className = "invoice-card";
+  const o = document.createElement("div");
+  if (o.className = "invoice-title", o.textContent = e.title || "Invoice", i.appendChild(o), e.description) {
     const p = document.createElement("div");
-    p.className = "invoice-desc", p.textContent = e.description, o.appendChild(p);
+    p.className = "invoice-desc", p.textContent = e.description, i.appendChild(p);
   }
-  const a = e.currency || "", d = e.total_amount ?? 0, u = document.createElement("div");
-  u.className = "invoice-amount", u.textContent = R(a, d), o.appendChild(u);
+  const a = e.currency || "", r = e.total_amount ?? 0, u = document.createElement("div");
+  u.className = "invoice-amount", u.textContent = O(a, r), i.appendChild(u);
   const c = document.createElement("button");
-  c.className = "invoice-pay", c.textContent = `Pay ${R(a, d)}`, c.addEventListener("click", async () => {
-    if (!l.sending) {
-      l.sending = !0, k(!0), c.disabled = !0, c.textContent = "Paying...", B();
+  c.className = "invoice-pay", c.textContent = `Pay ${O(a, r)}`, c.addEventListener("click", async () => {
+    if (!d.sending) {
+      d.sending = !0, C(!0), c.disabled = !0, c.textContent = "Paying...", B();
       try {
         const p = await fe(e.message_id);
-        h(), c.textContent = "Paid", P(p);
+        y(), c.textContent = "Paid", H(p);
       } catch (p) {
-        h(), c.disabled = !1, c.textContent = `Pay ${R(a, d)}`, L(`[Payment error: ${S(p)}]`, "received");
+        y(), c.disabled = !1, c.textContent = `Pay ${O(a, r)}`, b(`[Payment error: ${N(p)}]`, "received");
       }
-      l.sending = !1, k(!1), n.inputEl.focus();
+      d.sending = !1, C(!1), n.inputEl.focus();
     }
-  }), o.appendChild(c), s.appendChild(o);
+  }), i.appendChild(c), s.appendChild(i);
   const m = document.createElement("span");
   m.className = "meta", m.textContent = W(), s.appendChild(m), n.messagesEl.appendChild(s), $();
 }
-function P(e) {
-  const t = r(), n = e.reply_markup || null;
+function H(e) {
+  const t = l(), n = e.reply_markup || null;
   if (e.type === "text") {
     if (n && n.inline_keyboard) {
-      const s = N("received");
-      s.innerHTML += `<span class="text">${M(e.text || "")}</span>${F()}`, t.messagesEl.appendChild(s), ke(
+      const s = x("received");
+      s.innerHTML += `<span class="text">${S(e.text || "")}</span>${P()}`, t.messagesEl.appendChild(s), $e(
         s,
         n.inline_keyboard,
         e.message_id,
-        P,
-        (o) => L(o, "received")
+        H,
+        (i) => b(i, "received")
       ), $();
     } else
-      L(e.text || "", "received");
-    n && n.keyboard && Ne(n.keyboard);
+      b(e.text || "", "received");
+    n && n.keyboard && xe(n.keyboard);
     return;
   }
   if (e.type === "invoice") {
-    xe(e, "received");
+    Fe(e, "received");
     return;
   }
   if (e.type === "photo") {
@@ -477,95 +518,99 @@ function P(e) {
     oe(e.filename || "", `/api/file/${e.file_id || ""}`, "received");
     return;
   }
-  L(`[Unknown response type: ${e.type}]`, "received");
+  if (e.type === "poll") {
+    Pe(e, "received");
+    return;
+  }
+  b(`[Unknown response type: ${e.type}]`, "received");
 }
-async function ce() {
+async function le() {
   B();
   try {
     const e = await Q("/start");
-    h(), P(e), await J();
+    y(), H(e), await J();
   } catch (e) {
-    h(), L(`[Error: ${S(e)}]`, "received");
+    y(), b(`[Error: ${N(e)}]`, "received");
   }
 }
-async function Me() {
-  const e = r();
+async function Ie() {
+  const e = l();
   e.resetBtn.disabled = !0;
   try {
-    await ge(), e.messagesEl.innerHTML = '<div class="day-divider"><span>Today</span></div>', ne(), he(), Le(), await ce();
+    await ge(), e.messagesEl.innerHTML = '<div class="day-divider"><span>Today</span></div>', ne(), be(), we(), await le();
   } catch (t) {
-    L(`[Reset failed: ${S(t)}]`, "received");
+    b(`[Reset failed: ${N(t)}]`, "received");
   }
   e.resetBtn.disabled = !1;
 }
 async function j(e, t) {
-  const n = r(), s = (t == null ? void 0 : t.clearInput) ?? !1;
-  if (!(!e || l.sending)) {
-    E(), l.sending = !0, k(!0), s && (n.inputEl.value = ""), L(e, "sent"), B();
+  const n = l(), s = (t == null ? void 0 : t.clearInput) ?? !1;
+  if (!(!e || d.sending)) {
+    h(), d.sending = !0, C(!0), s && (n.inputEl.value = ""), b(e, "sent"), B();
     try {
-      const o = await Q(e);
-      h(), P(o), await J();
-    } catch (o) {
-      h(), L(`[Error: ${S(o)}]`, "received");
+      const i = await Q(e);
+      y(), H(i), await J();
+    } catch (i) {
+      y(), b(`[Error: ${N(i)}]`, "received");
     }
-    l.sending = !1, k(!1), n.inputEl.focus();
+    d.sending = !1, C(!1), n.inputEl.focus();
   }
 }
-async function Se(e, t, n) {
+async function _e(e, t, n) {
   const s = await me(e, t, n);
-  P(s);
+  H(s);
 }
 async function X() {
-  const e = r(), t = e.inputEl.value.trim(), n = l.stagedFiles.length > 0;
+  const e = l(), t = e.inputEl.value.trim(), n = d.stagedFiles.length > 0;
   if (!t && !n) return;
   if (!n) {
     await j(t, { clearInput: !0 });
     return;
   }
-  if (l.sending) return;
-  E(), l.sending = !0, k(!0), e.inputEl.value = "";
-  const s = we();
-  for (const [o, i] of s.entries()) {
-    const a = o === 0 ? t : "";
-    switch (i.type) {
+  if (d.sending) return;
+  h(), d.sending = !0, C(!0), e.inputEl.value = "";
+  const s = Te();
+  for (const [i, o] of s.entries()) {
+    const a = i === 0 ? t : "";
+    switch (o.type) {
       case "photo": {
-        se(i.localUrl, "sent", a);
+        se(o.localUrl, "sent", a);
         break;
       }
       case "voice": {
-        ae(i.localUrl, "sent", a);
+        ae(o.localUrl, "sent", a);
         break;
       }
       case "video_note": {
-        ie(i.localUrl, "sent", a);
+        ie(o.localUrl, "sent", a);
         break;
       }
       default:
-        oe(i.file.name, i.localUrl, "sent", a);
+        oe(o.file.name, o.localUrl, "sent", a);
     }
     B();
     try {
-      await Se(i.file, i.type, a), h();
-    } catch (d) {
-      h(), L(`[Upload error: ${S(d)}]`, "received");
+      await _e(o.file, o.type, a), y();
+    } catch (r) {
+      y(), b(`[Upload error: ${N(r)}]`, "received");
     }
   }
-  l.sending = !1, k(!1), e.inputEl.focus(), await J();
+  d.sending = !1, C(!1), e.inputEl.focus(), await J();
 }
-function Be() {
+function De() {
   const e = document.getElementById("buildHint");
   e && (e.style.display = "none");
-  const t = r();
-  $e(async (n) => {
+  const t = l();
+  Ne(async (n) => {
     await j(n, { clearInput: !1 });
-  }), ye(async (n) => {
+  }), he(async (n) => {
     await j(n, { clearInput: !1 });
-  }), Te(), t.sendBtn.addEventListener("click", () => {
+  }), ke(), t.sendBtn.addEventListener("click", () => {
     X();
   }), t.inputEl.addEventListener("keydown", (n) => {
     n.defaultPrevented || n.key === "Enter" && X();
   }), t.resetBtn.addEventListener("click", () => {
-    Me();
-  }), ce();
+    Ie();
+  }), le();
 }
-Be();
+De();

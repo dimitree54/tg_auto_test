@@ -99,3 +99,34 @@ async def test_store_response_file_fallback() -> None:
     assert result == "fallback.txt"
     stored = file_store.get("fallback_id")
     assert stored == ("fallback.txt", "text/plain", b"fallback data")
+
+
+@pytest.mark.asyncio
+async def test_serialize_poll_message() -> None:
+    """Test serializing a poll message."""
+    file_store = FileStore()
+
+    # Create mock poll data that matches what TASK_02 would produce
+    poll_data = {
+        "id": "poll_123",
+        "question": "What is your favorite color?",
+        "answers": [
+            {"text": "Red"},
+            {"text": "Blue"},
+            {"text": "Green"},
+        ],
+    }
+
+    message = ServerlessMessage(id=789, poll_data=poll_data)
+
+    result = await serialize_message(message, file_store)
+
+    assert result.type == "poll"
+    assert result.message_id == 789
+    assert result.poll_question == "What is your favorite color?"
+    assert result.poll_id == "poll_123"
+    assert len(result.poll_options) == 3
+    assert result.poll_options[0]["text"] == "Red"
+    assert result.poll_options[0]["voter_count"] == 0
+    assert result.poll_options[1]["text"] == "Blue"
+    assert result.poll_options[2]["text"] == "Green"
