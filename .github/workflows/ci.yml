@@ -21,6 +21,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: uv sync --dev
+      - run: uv sync --dev --extra demo
       - run: make check-ci
       - run: uv run python -m build
