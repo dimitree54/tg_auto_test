@@ -1,11 +1,9 @@
 """Unit tests for the demo server implementation."""
 
-from unittest.mock import AsyncMock, Mock  # noqa: TID251
+from unittest.mock import Mock  # noqa: TID251
 
 import pytest
 
-from tg_auto_test.demo_ui.server.backends.duck_backend import DuckBackend
-from tg_auto_test.demo_ui.server.backends.telethon_backend import TelethonBackend
 from tg_auto_test.demo_ui.server.demo_server import DemoServer, create_demo_app
 from tg_auto_test.demo_ui.server.file_store import FileStore
 
@@ -59,6 +57,7 @@ class TestDemoServer:
         mock_client = Mock()
         server = DemoServer(mock_client, "test_bot")
 
+        assert server.client == mock_client
         assert server.peer == "test_bot"
         assert server.timeout == 10.0
         assert isinstance(server.file_store, FileStore)
@@ -70,42 +69,12 @@ class TestDemoServer:
         with pytest.raises(ValueError, match="Peer must be specified"):
             DemoServer(mock_client, "")
 
-    def test_backend_detection_serverless(self) -> None:
-        """Test auto-detection of serverless backend."""
+    def test_init_with_custom_timeout(self) -> None:
+        """Test initialization with custom timeout."""
         mock_client = Mock()
-        mock_client.process_callback_query = AsyncMock()
+        server = DemoServer(mock_client, "test_bot", timeout=30.0)
 
-        server = DemoServer(mock_client, "test_bot", backend_type="auto")
-
-        # Should detect as duck backend
-        assert isinstance(server.backend, DuckBackend)
-
-    def test_backend_detection_telethon(self) -> None:
-        """Test auto-detection of Telethon backend."""
-        mock_client = Mock(spec=[])  # Start with empty spec
-        # Only add telethon methods
-        mock_client.get_messages = AsyncMock()
-        mock_client.get_dialogs = AsyncMock()
-
-        server = DemoServer(mock_client, "test_bot", backend_type="auto")
-
-        # Should detect as telethon backend
-        assert isinstance(server.backend, TelethonBackend)
-
-    def test_explicit_backend_type(self) -> None:
-        """Test explicit backend type selection."""
-        mock_client = Mock()
-
-        server = DemoServer(mock_client, "test_bot", backend_type="duck")
-
-        assert isinstance(server.backend, DuckBackend)
-
-    def test_invalid_backend_type(self) -> None:
-        """Test invalid backend type raises ValueError."""
-        mock_client = Mock()
-
-        with pytest.raises(ValueError, match="Unknown backend type"):
-            DemoServer(mock_client, "test_bot", backend_type="invalid")
+        assert server.timeout == 30.0
 
     def test_create_app(self) -> None:
         """Test app creation returns object with expected attributes."""
@@ -116,6 +85,7 @@ class TestDemoServer:
         # Just test that the method exists and server has required attributes
         assert hasattr(server, "create_app")
         assert callable(server.create_app)
+        assert server.client == mock_client
         assert server.peer == "test_bot"
         assert server.file_store is not None
 

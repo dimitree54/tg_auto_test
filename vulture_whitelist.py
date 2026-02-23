@@ -29,9 +29,11 @@ create_demo_app  # Factory function for demo apps
 index  # FastAPI route handler
 serve_file  # FastAPI route handler
 get_state  # FastAPI route handler
+send_message  # FastAPI route handler
 send_document  # FastAPI route handler
 send_voice  # FastAPI route handler
 send_photo  # FastAPI route handler
 send_video_note  # FastAPI route handler
 pay_invoice  # FastAPI route handler
+handle_callback  # FastAPI route handler
 reset  # FastAPI route handler

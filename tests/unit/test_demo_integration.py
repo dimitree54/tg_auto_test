@@ -1,39 +1,22 @@
 """Integration tests for the demo server."""
 
-from unittest.mock import AsyncMock, Mock  # noqa: TID251
+from unittest.mock import Mock  # noqa: TID251
 
-from tg_auto_test.demo_ui.server.backends.duck_backend import DuckBackend
-from tg_auto_test.demo_ui.server.backends.telethon_backend import TelethonBackend
 from tg_auto_test.demo_ui.server.demo_server import DemoServer
 from tg_auto_test.demo_ui.server.file_store import FileStore
 
 
-def test_demo_server_backend_detection() -> None:
-    """Test demo server backend detection with mock clients."""
-    # Test serverless client detection
-    mock_serverless = Mock()
-    mock_serverless.process_callback_query = AsyncMock()
+def test_demo_server_telethon_interface() -> None:
+    """Test demo server with Telethon-compatible client."""
+    # Test with mock client that has Telethon methods
+    mock_client = Mock()
+    mock_client.conversation = Mock()
+    mock_client.get_messages = Mock()
 
-    server_duck = DemoServer(mock_serverless, "test_bot", backend_type="auto")
+    server = DemoServer(mock_client, "test_bot")
 
-    assert isinstance(server_duck.backend, DuckBackend)
-
-    # Test capability detection
-    assert server_duck.backend.supports_capability("callback_queries")
-
-    # Test Telethon client detection
-    mock_telethon = Mock()
-    mock_telethon.get_messages = AsyncMock()
-    mock_telethon.get_dialogs = AsyncMock()
-    # Ensure no serverless methods exist
-    if hasattr(mock_telethon, "process_callback_query"):
-        del mock_telethon.process_callback_query
-    if hasattr(mock_telethon, "conversation"):
-        del mock_telethon.conversation
-
-    server_telethon = DemoServer(mock_telethon, "test_bot", backend_type="auto")
-
-    assert isinstance(server_telethon.backend, TelethonBackend)
+    assert server.client == mock_client
+    assert server.peer == "test_bot"
 
 
 def test_demo_server_file_handling() -> None:

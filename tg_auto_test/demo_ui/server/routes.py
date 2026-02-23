@@ -1,9 +1,11 @@
 """HTTP route handlers for the demo server."""
 
 from pathlib import Path
+from typing import TYPE_CHECKING  # noqa: TID251
 
 from fastapi import FastAPI, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
+from telegram import BotCommandScopeChat
 
 from tg_auto_test.demo_ui.server.api_models import (
     BotCommandInfo,
@@ -14,6 +16,9 @@ from tg_auto_test.demo_ui.server.api_models import (
     TextMessageRequest,
 )
 from tg_auto_test.demo_ui.server.serialize import serialize_message, store_response_file
+
+if TYPE_CHECKING:
+    from tg_auto_test.demo_ui.server.demo_server import DemoServer
 
 
 def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path | None) -> None:
@@ -41,16 +46,23 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
     @app.get("/api/state")
     async def get_state() -> BotStateResponse:
-        if not demo_server.backend.supports_capability("bot_state"):
-            return BotStateResponse(commands=[], menu_button_type="default")
+        # Bot state access is limited in standard Telethon
+        # This feature requires PTB integration (available in ServerlessTelegramClient)
+        try:
+            scope = BotCommandScopeChat(chat_id=demo_server.client.chat_id)
+            commands = await demo_server.client.application.bot.get_my_commands(scope=scope)
+            menu_btn = await demo_server.client.application.bot.get_chat_menu_button(chat_id=demo_server.client.chat_id)
+            menu_btn_type = str(getattr(menu_btn, "type", "default"))
 
-        commands_data, menu_type = await demo_server.backend.get_bot_state()
-        commands = [BotCommandInfo(**cmd) for cmd in commands_data]
-        return BotStateResponse(commands=commands, menu_button_type=menu_type)
+            command_list = [BotCommandInfo(command=cmd.command, description=cmd.description) for cmd in commands]
+            return BotStateResponse(commands=command_list, menu_button_type=menu_btn_type)
+        except AttributeError:
+            # Standard Telethon clients don't have PTB integration
+            return BotStateResponse(commands=[], menu_button_type="default")
 
     @app.post("/api/message")
     async def send_message(req: TextMessageRequest) -> MessageResponse:
-        async with demo_server.backend.conversation(demo_server.peer, demo_server.timeout) as conv:
+        async with demo_server.client.conversation(demo_server.peer, demo_server.timeout) as conv:
             await conv.send_message(req.text)
             response = await conv.get_response()
         return await serialize_message(response, demo_server.file_store)
@@ -73,18 +85,20 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
     @app.post("/api/invoice/pay")
     async def pay_invoice(req: InvoicePayRequest) -> MessageResponse:
-        if not demo_server.backend.supports_capability("invoice_payments"):
-            raise HTTPException(status_code=501, detail="Invoice payments not supported by this backend")
-
-        response = await demo_server.backend.handle_invoice_payment(req.message_id)
+        # Stars payments require ServerlessTelegramClient-specific method
+        await demo_server.client.simulate_stars_payment(req.message_id)
+        response = demo_server.client.pop_response()
         return await serialize_message(response, demo_server.file_store)
 
     @app.post("/api/callback")
     async def handle_callback(req: CallbackRequest) -> MessageResponse:
-        if not demo_server.backend.supports_capability("callback_queries"):
-            raise HTTPException(status_code=501, detail="Callback queries not supported by this backend")
+        # Use Telethon's standard button click API
+        msg = await demo_server.client.get_messages(demo_server.peer, ids=req.message_id)
+        if not msg:
+            raise HTTPException(status_code=404, detail=f"Message {req.message_id} not found")
 
-        response = await demo_server.backend.handle_callback(demo_server.peer, req.message_id, req.data)
+        # Click button and get response - ServerlessTelegramClient provides the response
+        response = await msg.click(data=req.data.encode())
         return await serialize_message(response, demo_server.file_store)
 
     @app.post("/api/reset")
@@ -92,10 +106,9 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
         # Clear file store
         demo_server.file_store.clear()
 
-        # Reconnect if managing lifecycle
-        if demo_server.backend.manage_lifecycle:
-            await demo_server.backend.disconnect()
-            await demo_server.backend.connect()
+        # Reconnect client using Telethon interface
+        await demo_server.client.disconnect()
+        await demo_server.client.connect()
 
         return {"status": "ok"}
 
@@ -114,8 +127,8 @@ async def _handle_file_upload(
     filename = file.filename or "file"
     content_type = file.content_type or "application/octet-stream"
 
-    async with demo_server.backend.conversation(demo_server.peer, demo_server.timeout) as conv:
-        # Send bytes directly - backends handle the conversion
+    async with demo_server.client.conversation(demo_server.peer, demo_server.timeout) as conv:
+        # Send bytes directly using Telethon API
         await conv.send_file(
             data,
             caption=caption,

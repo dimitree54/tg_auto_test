@@ -1,5 +1,6 @@
 from collections import deque
 from pathlib import Path
+from typing import Union
 
 from telegram import Update
 from telegram.ext import Application
@@ -13,6 +14,7 @@ from tg_auto_test.test_utils.ptb_types import BuildApplication
 from tg_auto_test.test_utils.response_processor import extract_responses
 from tg_auto_test.test_utils.serverless_telegram_conversation import ServerlessTelegramConversation
 from tg_auto_test.test_utils.stub_request import StubTelegramRequest
+from tg_auto_test.test_utils.telethon_compatible_message import TelethonCompatibleMessage
 
 _FAKE_TOKEN = "123:ABC"
 
@@ -54,6 +56,19 @@ class ServerlessTelegramClientCore:
 
     async def get_dialogs(self) -> list[str]:
         return []
+
+    async def get_messages(
+        self, entity: str, ids: int | list[int]
+    ) -> Union["TelethonCompatibleMessage", list["TelethonCompatibleMessage"], None]:
+        """Get messages by ID(s) for Telethon compatibility."""
+        del entity  # Not used in serverless mode
+
+        if isinstance(ids, int):
+            # Return a message that can handle clicks
+            return TelethonCompatibleMessage(ids, self)
+
+        # For list of IDs, return list of messages
+        return [TelethonCompatibleMessage(msg_id, self) for msg_id in ids]
 
     def conversation(self, bot_username: str, timeout: int = 10) -> ServerlessTelegramConversation:
         del bot_username, timeout
