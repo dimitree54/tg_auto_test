@@ -1,25 +1,53 @@
 """Extract audio/video metadata from in-memory bytes for tests."""
 
-import io
 import struct
-
-from mutagen import File as MutagenFile, MutagenError
 
 
 def audio_duration_seconds(data: bytes) -> float | None:
     """Return audio duration in seconds from bytes, or None if unavailable."""
     if not data:
         return None
-    try:
-        audio = MutagenFile(io.BytesIO(data))
-    except (MutagenError, OSError):
+
+    max_granule = _parse_ogg_max_granule(data)
+    if max_granule is None or max_granule <= 0:
         return None
-    if audio is None or audio.info is None:
+
+    return max_granule / 48_000.0
+
+
+def _parse_ogg_max_granule(data: bytes) -> int | None:
+    """Parse OGG container and return maximum granule position found."""
+    if len(data) < 27:
         return None
-    length = getattr(audio.info, "length", None)
-    if length is None:
-        return None
-    return float(length)
+
+    max_granule = 0
+    offset = 0
+    data_len = len(data)
+
+    while offset + 27 <= data_len:
+        if data[offset : offset + 4] != b"OggS":
+            offset += 1
+            continue
+
+        try:
+            granule = struct.unpack_from("<q", data, offset + 6)[0]
+            if granule >= 0:
+                max_granule = max(max_granule, granule)
+
+            num_segments = data[offset + 26]
+            if offset + 27 + num_segments > data_len:
+                break
+
+            page_size = 27 + num_segments
+            for i in range(num_segments):
+                page_size += data[offset + 27 + i]
+
+            offset += page_size
+
+        except (struct.error, IndexError):
+            break
+
+    return max_granule if max_granule > 0 else None
 
 
 def mp4_duration_and_dimensions(data: bytes) -> tuple[float | None, int | None, int | None]:
