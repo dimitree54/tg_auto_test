@@ -1,0 +1,46 @@
+/* Invoice */
+.invoice-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgb(0 0 0 / 4%);
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+.invoice-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.invoice-desc {
+  font-size: 12px;
+  color: #555;
+}
+
+.invoice-amount {
+  font-size: 12px;
+  color: #555;
+}
+
+.invoice-pay {
+  width: 100%;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.invoice-pay:hover {
+  opacity: 0.92;
+}
+
+.invoice-pay:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+  opacity: 1;
+}

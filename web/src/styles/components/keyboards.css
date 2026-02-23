@@ -1,0 +1,81 @@
+/* Inline keyboard buttons (below message) */
+.inline-keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+  margin-bottom: 4px;
+}
+
+.inline-keyboard .ik-row {
+  display: flex;
+  gap: 4px;
+}
+
+.inline-keyboard .ik-btn {
+  flex: 1;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  text-align: center;
+}
+
+.inline-keyboard .ik-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.inline-keyboard .ik-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Reply keyboard (above input area) */
+.reply-keyboard {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--input-bg);
+  border-bottom: 1px solid var(--input-border);
+  flex-shrink: 0;
+}
+
+.reply-keyboard.visible {
+  display: flex;
+}
+
+.reply-keyboard .rk-row {
+  display: flex;
+  gap: 4px;
+}
+
+.reply-keyboard .rk-btn {
+  flex: 1;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-align: center;
+}
+
+.reply-keyboard .rk-btn:hover {
+  background: #e8e8e8;
+}
+
+.reply-keyboard .rk-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

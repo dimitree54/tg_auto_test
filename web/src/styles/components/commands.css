@@ -1,0 +1,73 @@
+/* Menu button (commands) is hidden until enabled by /menu */
+#menuBtn {
+  display: none;
+}
+
+#menuBtn.visible {
+  display: flex;
+}
+
+/* Command panel (menu button + "/" suggestions) */
+.command-panel {
+  display: none;
+  padding: 6px 8px;
+  background: var(--input-bg);
+  border-bottom: 1px solid var(--input-border);
+  flex-shrink: 0;
+}
+
+.command-panel.visible {
+  display: block;
+}
+
+.command-panel .cp-card {
+  background: #fff;
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px var(--shadow);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.command-panel .cp-header {
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #075e54;
+  background: rgb(7 94 84 / 6%);
+  border-bottom: 1px solid rgb(0 0 0 / 6%);
+}
+
+.command-panel .cp-item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.command-panel .cp-item:hover,
+.command-panel .cp-item.selected {
+  background: #f3f3f3;
+}
+
+.command-panel .cp-cmd {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+}
+
+.command-panel .cp-desc {
+  font-size: 12px;
+  color: #666;
+}
+
+.command-panel .cp-empty {
+  padding: 10px;
+  font-size: 13px;
+  color: #666;
+}

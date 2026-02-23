@@ -1,0 +1,44 @@
+/* Typing indicator */
+.typing-indicator {
+  align-self: flex-start;
+  background: var(--recv-bg);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: none;
+  gap: 4px;
+  align-items: center;
+}
+
+.typing-indicator.visible {
+  display: flex;
+}
+
+.typing-dot {
+  width: 7px;
+  height: 7px;
+  background: #aaa;
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+
+  30% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}

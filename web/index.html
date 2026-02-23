@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Telegram Bot UI (Vite Dev)</title>
+  </head>
+  <body>
+    <div id="buildHint">
+      <h1>Vite dev</h1>
+      <p>This page is served by Vite for frontend development.</p>
+      <p>
+        API requests are proxied to
+        <code>http://127.0.0.1:8000</code>
+        .
+      </p>
+    </div>
+
+    <div class="chat-container">
+      <div class="chat-header">
+        <div class="bot-avatar">T</div>
+        <div class="header-info">
+          <h2>Telegram Bot UI</h2>
+          <div class="status">online</div>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="reset-btn" id="resetBtn">Reset</button>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="messages">
+        <div class="day-divider"><span>Today</span></div>
+      </div>
+
+      <div class="typing-indicator" id="typing">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+
+      <div class="staged-files" id="stagedFiles"></div>
+      <div class="reply-keyboard" id="replyKeyboard"></div>
+      <div class="command-panel" id="commandPanel"></div>
+      <div class="chat-input">
+        <input id="fileInput" multiple type="file" />
+        <button type="button" class="icon-btn secondary" id="menuBtn" title="Commands">
+          &#9776;
+        </button>
+        <button type="button" class="icon-btn secondary" id="attachBtn" title="Attach file">
+          &#128206;
+        </button>
+        <input autocomplete="off" id="msgInput" placeholder="Type a message..." type="text" />
+        <button type="button" class="icon-btn" id="sendBtn" title="Send">&#9654;</button>
+      </div>
+    </div>
+
+    <script src="/src/main.ts" type="module"></script>
+  </body>
+</html>
