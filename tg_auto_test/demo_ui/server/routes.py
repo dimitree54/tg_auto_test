@@ -110,6 +110,10 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
         await demo_server.client.disconnect()
         await demo_server.client.connect()
 
+        # Call custom reset callback if provided
+        if demo_server.on_reset is not None:
+            await demo_server.on_reset(demo_server.client)
+
         return {"status": "ok"}
 
 

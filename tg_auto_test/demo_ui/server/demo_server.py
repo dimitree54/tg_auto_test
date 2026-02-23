@@ -1,6 +1,6 @@
 """DemoServer class and FastAPI app factory for Telethon-targeted Telegram demo UI."""
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any  # noqa: TID251
@@ -10,6 +10,10 @@ from fastapi.staticfiles import StaticFiles
 
 from tg_auto_test.demo_ui.server.file_store import FileStore
 from tg_auto_test.demo_ui.server.routes import register_routes
+
+# Expose asset paths for consumers
+STATIC_DIR = Path(__file__).parent / "static"
+TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 
 class DemoServer:
@@ -21,6 +25,7 @@ class DemoServer:
         peer: str,
         *,
         timeout: float = 10.0,
+        on_reset: Callable[[Any], Any] | None = None,  # noqa: ANN401
     ) -> None:
         """Initialize demo server with Telethon client.
 
@@ -28,6 +33,7 @@ class DemoServer:
             client: Telegram client implementing Telethon interface
             peer: Peer identifier (bot username, etc.)
             timeout: Conversation timeout in seconds
+            on_reset: Optional async callback called during reset after built-in cleanup
         """
         if not peer:
             raise ValueError("Peer must be specified (no hardcoded peer allowed)")
@@ -35,6 +41,7 @@ class DemoServer:
         self.client = client
         self.peer = peer
         self.timeout = timeout
+        self.on_reset = on_reset
         self.file_store = FileStore()
 
     @asynccontextmanager
@@ -68,11 +75,13 @@ def create_demo_app(
     timeout: float = 10.0,
     static_dir: Path | None = None,
     templates_dir: Path | None = None,
+    on_reset: Callable[[Any], Any] | None = None,  # noqa: ANN401
 ) -> FastAPI:
     """Factory function to create a demo FastAPI app."""
     server = DemoServer(
         client=client,
         peer=peer,
         timeout=timeout,
+        on_reset=on_reset,
     )
     return server.create_app(static_dir=static_dir, templates_dir=templates_dir)
