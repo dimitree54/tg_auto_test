@@ -9,6 +9,13 @@ dependencies = [
     "Pillow>=11.0,<13",
 ]
 
+[project.optional-dependencies]
+demo = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=9.0.2,<10",

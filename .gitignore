@@ -9,3 +9,6 @@ build/
 *.egg-info/
 node_modules/
 .jscpd/
+web/node_modules/
+web/.vite/
+web/dist/
