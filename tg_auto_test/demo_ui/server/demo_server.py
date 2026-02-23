@@ -1,19 +1,77 @@
 """DemoServer class and FastAPI app factory for Telethon-targeted Telegram demo UI."""
 
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any  # noqa: TID251
+from typing import Protocol
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from tg_auto_test.demo_ui.server.file_store import FileStore
 from tg_auto_test.demo_ui.server.routes import register_routes
+from tg_auto_test.test_utils.models import ServerlessMessage
+from tg_auto_test.test_utils.telethon_compatible_message import TelethonCompatibleMessage
 
 # Internal asset paths
 _STATIC_DIR = Path(__file__).parent / "static"
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
+
+
+class DemoConversationProtocol(Protocol):
+    """Protocol for conversation context manager returned by client.conversation()."""
+
+    async def send_message(self, text: str) -> None:
+        """Send a text message."""
+        ...
+
+    async def get_response(self) -> ServerlessMessage:
+        """Get the bot's response to the last sent message."""
+        ...
+
+    async def send_file(
+        self,
+        file: Path | bytes,
+        *,
+        caption: str = "",
+        force_document: bool = False,
+        voice_note: bool = False,
+        video_note: bool = False,
+    ) -> None:
+        """Send a file message."""
+        ...
+
+
+class DemoClientProtocol(Protocol):
+    """Protocol for the DemoServer client parameter."""
+
+    async def connect(self) -> None:
+        """Connect the client."""
+        ...
+
+    async def disconnect(self) -> None:
+        """Disconnect the client."""
+        ...
+
+    async def get_bot_state(self) -> dict[str, list[dict[str, str]] | str]:
+        """Get bot state including commands and menu button type."""
+        ...
+
+    def conversation(self, peer: str, timeout: float) -> DemoConversationProtocol:
+        """Create a conversation context manager."""
+        ...
+
+    async def simulate_stars_payment(self, message_id: int) -> None:
+        """Simulate a Stars payment for the given invoice message ID."""
+        ...
+
+    def pop_response(self) -> ServerlessMessage:
+        """Pop the most recent response from the client."""
+        ...
+
+    async def get_messages(self, peer: str, *, ids: int) -> TelethonCompatibleMessage | None:
+        """Get messages by ID for Telethon compatibility."""
+        ...
 
 
 class DemoServer:
@@ -21,11 +79,11 @@ class DemoServer:
 
     def __init__(
         self,
-        client: Any,  # noqa: ANN401
+        client: DemoClientProtocol,
         peer: str,
         *,
         timeout: float = 10.0,
-        on_reset: Callable[[Any], Any] | None = None,  # noqa: ANN401
+        on_reset: Callable[[DemoClientProtocol], Awaitable[None]] | None = None,
     ) -> None:
         """Initialize demo server with Telethon client.
 
@@ -69,11 +127,11 @@ class DemoServer:
 
 
 def create_demo_app(
-    client: Any,  # noqa: ANN401
+    client: DemoClientProtocol,
     peer: str,
     *,
     timeout: float = 10.0,
-    on_reset: Callable[[Any], Any] | None = None,  # noqa: ANN401
+    on_reset: Callable[[DemoClientProtocol], Awaitable[None]] | None = None,
 ) -> FastAPI:
     """Factory function to create a demo FastAPI app."""
     server = DemoServer(
