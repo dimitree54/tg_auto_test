@@ -74,16 +74,11 @@ async def test_poll_api_call_structure() -> None:
             assert "options" in call.parameters
 
             # Check that result contains poll data
-            assert call.result is not None
-            assert isinstance(call.result, dict)
-            assert "poll" in call.result
+            assert call.result is not None and isinstance(call.result, dict) and "poll" in call.result
             poll_data = call.result["poll"]
-            assert isinstance(poll_data, dict)
-            assert poll_data["question"] == "What's your favorite color?"
+            assert isinstance(poll_data, dict) and poll_data["question"] == "What's your favorite color?"
             options = poll_data["options"]
-            assert isinstance(options, list)
-            assert len(options) == 3
-            assert isinstance(options[0], dict)
+            assert isinstance(options, list) and len(options) == 3 and isinstance(options[0], dict)
             assert options[0]["text"] == "Red"
 
     finally:
@@ -113,19 +108,13 @@ async def test_multiple_polls() -> None:
             send_poll_calls = [call for call in api_calls if call.api_method == "sendPoll"]
             assert len(send_poll_calls) == 2
 
-            assert send_poll_calls[0].result is not None
-            assert isinstance(send_poll_calls[0].result, dict)
-            assert send_poll_calls[1].result is not None
-            assert isinstance(send_poll_calls[1].result, dict)
+            assert send_poll_calls[0].result is not None and isinstance(send_poll_calls[0].result, dict)
+            assert send_poll_calls[1].result is not None and isinstance(send_poll_calls[1].result, dict)
 
             poll1_data = send_poll_calls[0].result["poll"]
             poll2_data = send_poll_calls[1].result["poll"]
-            assert isinstance(poll1_data, dict)
-            assert isinstance(poll2_data, dict)
-
-            poll1_id = poll1_data["id"]
-            poll2_id = poll2_data["id"]
-            assert poll1_id != poll2_id
+            assert isinstance(poll1_data, dict) and isinstance(poll2_data, dict)
+            assert poll1_data["id"] != poll2_data["id"]
 
     finally:
         await client.disconnect()

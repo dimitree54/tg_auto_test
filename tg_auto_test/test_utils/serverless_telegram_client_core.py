@@ -71,10 +71,8 @@ class ServerlessTelegramClientCore:
         scope = BotCommandScopeChat(chat_id=self.chat_id)
         commands = await self.application.bot.get_my_commands(scope=scope)
         menu_btn = await self.application.bot.get_chat_menu_button(chat_id=self.chat_id)
-        menu_btn_type = str(getattr(menu_btn, "type", "default"))
-
         command_list = [{"command": cmd.command, "description": cmd.description} for cmd in commands]
-        return {"commands": command_list, "menu_button_type": menu_btn_type}
+        return {"commands": command_list, "menu_button_type": str(getattr(menu_btn, "type", "default"))}
 
     async def clear_bot_state(self) -> None:
         """Clear bot state including commands and menu button."""
@@ -87,12 +85,8 @@ class ServerlessTelegramClientCore:
     ) -> Union["TelethonCompatibleMessage", list["TelethonCompatibleMessage"], None]:
         """Get messages by ID(s) for Telethon compatibility."""
         del entity  # Not used in serverless mode
-
         if isinstance(ids, int):
-            # Return a message that can handle clicks
             return TelethonCompatibleMessage(ids, self)
-
-        # For list of IDs, return list of messages
         return [TelethonCompatibleMessage(msg_id, self) for msg_id in ids]
 
     def conversation(self, bot_username: str, timeout: int = 10) -> ServerlessTelegramConversation:
@@ -162,6 +156,18 @@ class ServerlessTelegramClientCore:
         payload: dict[str, JsonValue] = {
             "update_id": self._helpers.next_update_id_value(),
             "callback_query": callback_query,
+        }
+        return await self._process_message_update(payload)
+
+    async def process_poll_answer(self, poll_id: str, option_ids: list[int]) -> ServerlessMessage:
+        self._outbox.clear()
+        payload = {
+            "update_id": self._helpers.next_update_id_value(),
+            "poll_answer": {
+                "poll_id": poll_id,
+                "user": self._helpers.user_dict(),
+                "option_ids": option_ids,
+            },
         }
         return await self._process_message_update(payload)
 
