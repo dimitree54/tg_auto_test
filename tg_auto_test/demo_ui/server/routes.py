@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING  # noqa: TID251
 
 from fastapi import FastAPI, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
-from telegram import BotCommandScopeChat
 
 from tg_auto_test.demo_ui.server.api_models import (
     BotCommandInfo,
@@ -46,19 +45,13 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
     @app.get("/api/state")
     async def get_state() -> BotStateResponse:
-        # Bot state access is limited in standard Telethon
-        # This feature requires PTB integration (available in ServerlessTelegramClient)
-        try:
-            scope = BotCommandScopeChat(chat_id=demo_server.client.chat_id)
-            commands = await demo_server.client.application.bot.get_my_commands(scope=scope)
-            menu_btn = await demo_server.client.application.bot.get_chat_menu_button(chat_id=demo_server.client.chat_id)
-            menu_btn_type = str(getattr(menu_btn, "type", "default"))
-
-            command_list = [BotCommandInfo(command=cmd.command, description=cmd.description) for cmd in commands]
-            return BotStateResponse(commands=command_list, menu_button_type=menu_btn_type)
-        except AttributeError:
-            # Standard Telethon clients don't have PTB integration
-            return BotStateResponse(commands=[], menu_button_type="default")
+        # Bot state access requires PTB integration (available in ServerlessTelegramClient)
+        # The client is expected to have these attributes - if not, it's a bug that should fail loudly
+        bot_state = await demo_server.client.get_bot_state()
+        command_list = [
+            BotCommandInfo(command=cmd["command"], description=cmd["description"]) for cmd in bot_state["commands"]
+        ]
+        return BotStateResponse(commands=command_list, menu_button_type=bot_state["menu_button_type"])
 
     @app.post("/api/message")
     async def send_message(req: TextMessageRequest) -> MessageResponse:

@@ -2,7 +2,7 @@ from collections import deque
 from pathlib import Path
 from typing import Union
 
-from telegram import Update
+from telegram import BotCommandScopeChat, Update
 from telegram.ext import Application
 from telethon.tl.types import LabeledPrice, User
 
@@ -56,6 +56,16 @@ class ServerlessTelegramClientCore:
 
     async def get_dialogs(self) -> list[str]:
         return []
+
+    async def get_bot_state(self) -> dict[str, list[dict[str, str]] | str]:
+        """Get bot state including commands and menu button type."""
+        scope = BotCommandScopeChat(chat_id=self.chat_id)
+        commands = await self.application.bot.get_my_commands(scope=scope)
+        menu_btn = await self.application.bot.get_chat_menu_button(chat_id=self.chat_id)
+        menu_btn_type = str(getattr(menu_btn, "type", "default"))
+
+        command_list = [{"command": cmd.command, "description": cmd.description} for cmd in commands]
+        return {"commands": command_list, "menu_button_type": menu_btn_type}
 
     async def get_messages(
         self, entity: str, ids: int | list[int]
