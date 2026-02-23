@@ -19,3 +19,6 @@ send_message
 send_file
 get_response
 click_inline_button
+
+# Test helpers
+build_test_application  # Helper function in tests/unit/helpers_ptb_app.py
