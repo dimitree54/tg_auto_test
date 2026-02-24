@@ -130,8 +130,10 @@ uv run pytest --cov=tg_auto_test
 - Consider extension points for other frameworks
 
 **Telethon compatibility:**
-- Test interfaces should match Telethon's patterns where possible
-- Maintain consistent behavior between serverless and serverfull modes
+- Test interfaces MUST match Telethon's public signatures exactly (not 'where possible')
+- Use `inspect` module conformance tests to verify interface alignment
+- Unimplemented Telethon features raise `NotImplementedError`, never silent no-ops
+- Extra `_`-prefixed methods are allowed for test infrastructure
 
 ## Getting help
 

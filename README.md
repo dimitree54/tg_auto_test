@@ -22,6 +22,16 @@ A serverless testing library for python-telegram-bot applications. Runs a real P
 
 You provide a `build_application` callback that configures your PTB `Application` with handlers. The library provides a `ServerlessTelegramClient` that mimics Telethon's client interface, bridging outgoing Bot API calls into Telethon TL objects for assertions.
 
+## Telethon Interface Contract
+
+Our fake classes (`ServerlessTelegramClient`, `ServerlessMessage`, `ServerlessTelegramConversation`) **MUST** match real Telethon 1.42 public interfaces exactly: parameter names, positional/keyword-only markers, defaults, types, and return types.
+
+**Key principles:**
+- Extra `_`-prefixed methods (like `_pop_response`, `_api_calls`, `_process_text_message`) ARE allowed for internal test infrastructure
+- Any Telethon public method/property we add but don't fully implement MUST raise `NotImplementedError("description")`
+- The Demo UI works with both `ServerlessTelegramClient` and real `TelegramClient` through standard Telethon interfaces
+- Interface compliance is verified through `inspect` module conformance tests
+
 ## Quickstart
 
 ```python
@@ -44,11 +54,6 @@ async with client.conversation("test_bot") as conv:
     await conv.send_message("hello")
     msg = await conv.get_response()
     assert msg.text == "hello"
-    
-    # Inspect API calls
-    assert len(client.api_calls) == 2  # getMe + sendMessage
-    assert client.last_api_call.api_method == "sendMessage"
-    assert client.last_api_call.parameters["text"] == "hello"
 await client.disconnect()
 ```
 
@@ -68,9 +73,8 @@ ServerlessTelegramClient(
 )
 ```
 
-**API call inspection:**
-- `.api_calls: list[TelegramApiCall]` — read-only list of all API calls made through this client
-- `.last_api_call: TelegramApiCall | None` — the last API call made, or None if no calls were made
+**Conversation management:**
+- `conversation(entity, *, timeout=60.0)` — create conversation context manager
 
 ### ServerlessTelegramConversation
 
@@ -93,7 +97,6 @@ Response object with Telethon-compatible interface:
 - `.invoice: MessageMediaInvoice | None` — invoice details
 - `.buttons: list[list[ServerlessButton]] | None` — keyboard button rows
 - `.button_count: int` — total number of buttons
-- `.reply_markup_data: dict | None` — raw reply markup data
 - `await .download_media(file=bytes) -> bytes | None` — download media bytes
 - `await .click(data: bytes) -> ServerlessMessage` — click inline button
 
