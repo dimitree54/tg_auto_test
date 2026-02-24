@@ -1,6 +1,7 @@
 """Unit tests for the demo server implementation."""
 
 import asyncio
+from typing import cast
 from unittest.mock import AsyncMock, Mock  # noqa: TID251
 
 from fastapi.testclient import TestClient
@@ -130,23 +131,35 @@ def test_demo_server_without_on_action_callback() -> None:
 
 
 def test_poll_vote_endpoint() -> None:
-    """Test the poll vote endpoint."""
-    # Create mock client with process_poll_answer method
-    mock_client = Mock()
-    mock_client.connect = AsyncMock()
-    mock_client.disconnect = AsyncMock()
+    """Test the poll vote endpoint using Telethon SendVoteRequest."""
 
-    # Mock the poll answer response
-    response_message = ServerlessMessage(id=456, text="You voted for: Red")
-    mock_client.process_poll_answer = AsyncMock(return_value=response_message)
+    class MockClient:
+        def __init__(self) -> None:
+            self.connect = AsyncMock()
+            self.disconnect = AsyncMock()
+            self.get_bot_state = AsyncMock(return_value={"commands": [], "menu_button_type": "default"})
+            self.conversation = Mock()
+            self.simulate_stars_payment = AsyncMock()
+            self.get_messages = AsyncMock()
+            self._call_log: list = []
+            self._response = ServerlessMessage(id=456, text="You voted for: Red")
+
+        def pop_response(self) -> ServerlessMessage:
+            return self._response
+
+        async def __call__(self, request: object) -> None:
+            self._call_log.append(request)
+            return None
+
+    mock_client = MockClient()
 
     # Create demo server and app
-    server = DemoServer(mock_client, "test_bot")
+    server = DemoServer(cast(DemoClientProtocol, mock_client), "test_bot")
     app = server.create_app()
 
-    # Test the endpoint
+    # Test the endpoint with new API (message_id instead of poll_id)
     with TestClient(app) as client:
-        response = client.post("/api/poll/vote", json={"poll_id": "poll_123", "option_ids": [0]})
+        response = client.post("/api/poll/vote", json={"message_id": 123, "option_ids": [0]})
 
     assert response.status_code == 200
     data = response.json()
@@ -154,5 +167,8 @@ def test_poll_vote_endpoint() -> None:
     assert data["text"] == "You voted for: Red"
     assert data["message_id"] == 456
 
-    # Verify the client method was called correctly
-    mock_client.process_poll_answer.assert_called_once_with("poll_123", [0])
+    # Verify the client __call__ method was called with SendVoteRequest
+    assert len(mock_client._call_log) == 1
+    call_args = mock_client._call_log[0]
+    assert call_args.msg_id == 123
+    assert call_args.options == [bytes([0])]

@@ -28,6 +28,7 @@ TelethonRequest = (
     | functions.payments.SendStarsFormRequest
     | functions.bots.GetBotCommandsRequest
     | functions.bots.GetBotMenuButtonRequest
+    | functions.messages.SendVoteRequest
 )
 TelethonResponse = (
     types.payments.StarsStatus
@@ -36,6 +37,7 @@ TelethonResponse = (
     | list[types.BotCommand]
     | types.BotMenuButtonCommands
     | types.BotMenuButtonDefault
+    | types.Updates
 )
 
 
@@ -83,5 +85,11 @@ async def handle_telethon_request(client: ServerlessTelegramClientCore, request:
         if menu is not None and menu.get("type") == "commands":
             return types.BotMenuButtonCommands()
         return types.BotMenuButtonDefault()
+
+    if isinstance(request, functions.messages.SendVoteRequest):
+        # Handle poll vote - delegate to new method that will be added to the core
+        await client._handle_send_vote_request(request.peer, request.msg_id, request.options)
+        # Return minimal Updates object - in serverless mode we don't need full update tracking
+        return types.Updates(updates=[], users=[], chats=[], date=None, seq=0)
 
     raise NotImplementedError(f"Unsupported Telethon request: {type(request)!r}")

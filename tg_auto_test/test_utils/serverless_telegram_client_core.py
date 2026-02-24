@@ -10,6 +10,11 @@ from tg_auto_test.test_utils.file_message_builder import build_file_payload
 from tg_auto_test.test_utils.json_types import JsonValue
 from tg_auto_test.test_utils.media_types import detect_content_type
 from tg_auto_test.test_utils.models import FileData, ServerlessMessage, TelegramApiCall
+from tg_auto_test.test_utils.poll_vote_handler import (
+    PollTracker,
+    create_callback_query_payload,
+    handle_send_vote_request_for_client,
+)
 from tg_auto_test.test_utils.ptb_types import BuildApplication
 from tg_auto_test.test_utils.response_processor import extract_responses
 from tg_auto_test.test_utils.serverless_client_helpers import ServerlessClientHelpers
@@ -39,6 +44,7 @@ class ServerlessTelegramClientCore:
         self._outbox: deque[ServerlessMessage] = deque()
         self._stars_balance = 100
         self._invoices: dict[int, dict[str, str | int | list[LabeledPrice]]] = {}
+        self._poll_tracker = PollTracker()
 
     @property
     def api_calls(self) -> list[TelegramApiCall]:
@@ -138,42 +144,34 @@ class ServerlessTelegramClientCore:
         return await self._process_message_update(payload)
 
     async def process_callback_query(self, message_id: int, data: str) -> ServerlessMessage:
-        bot_user = self.request._bot_user()  # noqa: SLF001
-        callback_message: dict[str, JsonValue] = {
-            "message_id": message_id,
-            "date": 0,
-            "chat": {"id": self.chat_id, "type": "private"},
-            "from": bot_user,
-            "text": "",
-        }
-        callback_query: dict[str, JsonValue] = {
-            "id": f"cb_{message_id}_{data}",
-            "from": self._helpers.user_dict(),
-            "chat_instance": str(self.chat_id),
-            "message": callback_message,
-            "data": data,
-        }
-        payload: dict[str, JsonValue] = {
-            "update_id": self._helpers.next_update_id_value(),
-            "callback_query": callback_query,
-        }
+        payload = create_callback_query_payload(
+            message_id,
+            data,
+            self.chat_id,
+            self.request._bot_user(),
+            self._helpers,  # noqa: SLF001
+        )
         return await self._process_message_update(payload)
 
-    async def process_poll_answer(self, poll_id: str, option_ids: list[int]) -> ServerlessMessage:
-        self._outbox.clear()
-        payload = {
-            "update_id": self._helpers.next_update_id_value(),
-            "poll_answer": {
-                "poll_id": poll_id,
-                "user": self._helpers.user_dict(),
-                "option_ids": option_ids,
-            },
-        }
-        return await self._process_message_update(payload)
+    async def _handle_send_vote_request(
+        self, peer: object, message_id: int, option_bytes: list[bytes]
+    ) -> ServerlessMessage:
+        """Handle Telethon SendVoteRequest by mapping to poll_answer update."""
+        del peer  # Ignored in serverless mode
+        return await handle_send_vote_request_for_client(
+            self._poll_tracker,
+            self._helpers,
+            self._process_message_update,
+            self._outbox,
+            message_id,
+            option_bytes,
+        )
 
     async def _process_message_update(self, payload: dict[str, JsonValue]) -> ServerlessMessage:
         new_calls = await self._process_update(payload)
-        responses = extract_responses(new_calls, self.request.file_store, self._invoices, self._handle_click)
+        responses = extract_responses(
+            new_calls, self.request.file_store, self._invoices, self._handle_click, self._poll_tracker
+        )
         if not responses:
             raise RuntimeError("Bot did not send a recognizable response.")
         for resp in responses:

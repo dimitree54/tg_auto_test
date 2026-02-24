@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING  # noqa: TID251
 
 from fastapi import FastAPI, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
+from telethon.tl.functions.messages import SendVoteRequest
+from telethon.tl.types import InputPeerEmpty
 
 from tg_auto_test.demo_ui.server.api_models import (
     BotCommandInfo,
@@ -153,11 +155,24 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
     @app.post("/api/poll/vote")
     async def vote_poll(request: PollVoteRequest) -> MessageResponse:
-        """Handle poll vote by calling process_poll_answer."""
+        """Handle poll vote by calling Telethon SendVoteRequest."""
         demo_server = app.state.demo_server
 
-        # Call process_poll_answer on the client
-        response = await demo_server.client.process_poll_answer(request.poll_id, request.option_ids)
+        # Convert option indices to bytes (consistent with model_helpers.py)
+        option_bytes = [bytes([i]) for i in request.option_ids]
+
+        # Use Telethon SendVoteRequest pattern
+        vote_request = SendVoteRequest(
+            peer=InputPeerEmpty(),  # Ignored in serverless mode
+            msg_id=request.message_id,
+            options=option_bytes,
+        )
+
+        # Execute the request
+        await demo_server.client(vote_request)
+
+        # Get the response
+        response = demo_server.client.pop_response()
 
         # Serialize the bot response
         result = await serialize_message(response, demo_server.file_store)

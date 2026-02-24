@@ -73,8 +73,8 @@ class DemoClientProtocol(Protocol):
         """Get messages by ID for Telethon compatibility."""
         ...
 
-    async def process_poll_answer(self, poll_id: str, option_ids: list[int]) -> ServerlessMessage:
-        """Process a poll answer and return the bot's response."""
+    async def __call__(self, request: object) -> object:
+        """Execute Telethon TL request."""
         ...
 
 

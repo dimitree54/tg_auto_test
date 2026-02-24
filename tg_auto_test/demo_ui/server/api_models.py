@@ -27,7 +27,7 @@ class BotStateResponse(BaseModel):
 
 
 class PollVoteRequest(BaseModel):
-    poll_id: str
+    message_id: int
     option_ids: list[int]
 
 

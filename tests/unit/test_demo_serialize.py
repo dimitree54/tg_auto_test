@@ -106,11 +106,11 @@ async def test_serialize_poll_message() -> None:
     """Test serializing a poll message."""
     file_store = FileStore()
 
-    # Create mock poll data that matches what TASK_02 would produce
+    # Create mock poll data that matches what stub_request_media produces
     poll_data = {
         "id": "poll_123",
         "question": "What is your favorite color?",
-        "answers": [
+        "options": [
             {"text": "Red"},
             {"text": "Blue"},
             {"text": "Green"},
@@ -125,8 +125,12 @@ async def test_serialize_poll_message() -> None:
     assert result.message_id == 789
     assert result.poll_question == "What is your favorite color?"
     assert result.poll_id == "poll_123"
+    # Verify poll_options is non-empty and contains the correct options
+    assert result.poll_options is not None
     assert len(result.poll_options) == 3
     assert result.poll_options[0]["text"] == "Red"
     assert result.poll_options[0]["voter_count"] == 0
     assert result.poll_options[1]["text"] == "Blue"
+    assert result.poll_options[1]["voter_count"] == 0
     assert result.poll_options[2]["text"] == "Green"
+    assert result.poll_options[2]["voter_count"] == 0

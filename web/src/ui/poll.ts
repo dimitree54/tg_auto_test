@@ -56,7 +56,10 @@ export function addPollMessage(data: MessageResponse, type: BubbleType): void {
     el.appendChild(optionsEl);
   }
 
-  el.innerHTML += metaHtml();
+  const meta = document.createElement('span');
+  meta.className = 'meta';
+  meta.textContent = fmtTime(new Date());
+  el.appendChild(meta);
   els.messagesEl.appendChild(el);
   scrollBottom();
 }

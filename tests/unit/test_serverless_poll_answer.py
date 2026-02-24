@@ -1,8 +1,10 @@
-"""Test poll answer handling with ServerlessTelegramClient."""
+"""Test poll answer handling with ServerlessTelegramClient using Telethon API."""
 
 import pytest
 from telegram import Update
 from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, PollAnswerHandler
+from telethon.tl.functions.messages import SendVoteRequest
+from telethon.tl.types import InputPeerEmpty
 
 from tg_auto_test.test_utils.serverless_telegram_client import ServerlessTelegramClient
 
@@ -53,71 +55,89 @@ def build_poll_with_answer_application(builder: ApplicationBuilder) -> Applicati
     return app
 
 
-async def _setup_poll_and_get_id(client: ServerlessTelegramClient) -> str:
-    """Setup poll and return poll_id."""
+async def _setup_poll_and_get_message(client: ServerlessTelegramClient) -> tuple[int, bytes]:
+    """Setup poll and return message_id and first option bytes."""
     async with client.conversation("test_bot") as conv:
         await conv.send_message("/poll")
         poll_msg = await conv.get_response()
         assert poll_msg.poll is not None
-        # Get the original string poll ID from the poll_data (before hashing)
-        if poll_msg.poll_data and isinstance(poll_msg.poll_data, dict):
-            poll_id = str(poll_msg.poll_data.get("id", ""))
-        else:
-            poll_id = str(poll_msg.poll.poll.id)  # Fallback to hashed version
-        return poll_id
+        # Return message ID and first option bytes
+        first_option_bytes = poll_msg.poll.poll.answers[0].option
+        return poll_msg.id, first_option_bytes
 
 
 @pytest.mark.asyncio
-async def test_process_poll_answer() -> None:
-    """Test poll answer processing end-to-end."""
+async def test_send_vote_request() -> None:
+    """Test poll answer processing end-to-end using SendVoteRequest."""
     client = ServerlessTelegramClient(build_application=build_poll_with_answer_application)
     await client.connect()
     try:
-        poll_id = await _setup_poll_and_get_id(client)
-        response = await client.process_poll_answer(poll_id, [0])
+        message_id, first_option_bytes = await _setup_poll_and_get_message(client)
+
+        # Use Telethon SendVoteRequest
+        vote_request = SendVoteRequest(peer=InputPeerEmpty(), msg_id=message_id, options=[first_option_bytes])
+        await client(vote_request)
+
+        # Get the response
+        response = client.pop_response()
         assert response.text == "Alice voted for: Red"
     finally:
         await client.disconnect()
 
 
 @pytest.mark.asyncio
-async def test_process_poll_answer_multiple_options() -> None:
-    """Test poll answer with multiple options selected."""
+async def test_send_vote_request_multiple_options() -> None:
+    """Test poll answer with multiple options using SendVoteRequest."""
     client = ServerlessTelegramClient(build_application=build_poll_with_answer_application)
     await client.connect()
     try:
-        poll_id = await _setup_poll_and_get_id(client)
-        response = await client.process_poll_answer(poll_id, [0, 2])
+        message_id, _ = await _setup_poll_and_get_message(client)
+
+        # Use bytes for options 0 and 2 (Red and Blue)
+        option_bytes = [bytes([0]), bytes([2])]
+
+        vote_request = SendVoteRequest(peer=InputPeerEmpty(), msg_id=message_id, options=option_bytes)
+        await client(vote_request)
+
+        response = client.pop_response()
         assert response.text == "Alice voted for: Red, Blue"
     finally:
         await client.disconnect()
 
 
 @pytest.mark.asyncio
-async def test_process_poll_answer_unknown_poll() -> None:
-    """Test poll answer for unknown poll ID."""
+async def test_send_vote_request_unknown_poll() -> None:
+    """Test poll answer for unknown poll message ID."""
     client = ServerlessTelegramClient(build_application=build_poll_with_answer_application)
     await client.connect()
     try:
-        # Process poll answer for non-existent poll
-        response = await client.process_poll_answer("unknown_poll_123", [0])
+        # Use SendVoteRequest for non-existent message
+        vote_request = SendVoteRequest(
+            peer=InputPeerEmpty(),
+            msg_id=99999,  # Non-existent message ID
+            options=[bytes([0])],
+        )
 
-        # Should get error message about poll not found
-        assert "Poll unknown_poll_123 not found in bot data." in response.text
+        # Should raise RuntimeError for unknown poll
+        with pytest.raises(RuntimeError, match="Poll not found for message_id 99999"):
+            await client(vote_request)
 
     finally:
         await client.disconnect()
 
 
 @pytest.mark.asyncio
-async def test_process_poll_answer_api_call_structure() -> None:
-    """Test that poll answer generates correct API calls."""
+async def test_send_vote_request_api_call_structure() -> None:
+    """Test that SendVoteRequest generates correct API calls."""
     client = ServerlessTelegramClient(build_application=build_poll_with_answer_application)
     await client.connect()
     try:
-        poll_id = await _setup_poll_and_get_id(client)
+        message_id, _ = await _setup_poll_and_get_message(client)
         client.request.calls.clear()  # Clear previous API calls to focus on poll answer
-        await client.process_poll_answer(poll_id, [1])
+
+        # Vote for option 1 (Green)
+        vote_request = SendVoteRequest(peer=InputPeerEmpty(), msg_id=message_id, options=[bytes([1])])
+        await client(vote_request)
 
         # Check that sendMessage was called as a result
         send_message_calls = [call for call in client.api_calls if call.api_method == "sendMessage"]

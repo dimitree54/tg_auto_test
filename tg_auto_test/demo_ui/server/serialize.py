@@ -21,10 +21,10 @@ async def serialize_message(message: ServerlessMessage, file_store: FileStore) -
 
         if isinstance(poll_data, dict):
             question = str(poll_data.get("question", ""))
-            if "answers" in poll_data and isinstance(poll_data["answers"], list):
+            if "options" in poll_data and isinstance(poll_data["options"], list):
                 options = [
                     {"text": str(option.get("text", "")), "voter_count": 0}
-                    for option in poll_data["answers"]
+                    for option in poll_data["options"]
                     if isinstance(option, dict)
                 ]
 
