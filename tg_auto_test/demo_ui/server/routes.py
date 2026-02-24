@@ -5,9 +5,16 @@ from typing import TYPE_CHECKING  # noqa: TID251
 
 from fastapi import FastAPI, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
+from telethon.tl.functions.bots import GetBotCommandsRequest, GetBotMenuButtonRequest
 from telethon.tl.functions.messages import SendVoteRequest
 from telethon.tl.functions.payments import SendStarsFormRequest
-from telethon.tl.types import InputInvoiceMessage, InputPeerEmpty
+from telethon.tl.types import (
+    BotCommandScopeDefault,
+    BotMenuButtonCommands,
+    InputInvoiceMessage,
+    InputPeerEmpty,
+    InputPeerUser,
+)
 
 from tg_auto_test.demo_ui.server.api_models import (
     BotCommandInfo,
@@ -50,13 +57,16 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
     @app.get("/api/state")
     async def get_state() -> BotStateResponse:
-        # Bot state access requires PTB integration (available in ServerlessTelegramClient)
-        # The client is expected to have these attributes - if not, it's a bug that should fail loudly
-        bot_state = await demo_server.client.get_bot_state()
-        command_list = [
-            BotCommandInfo(command=cmd["command"], description=cmd["description"]) for cmd in bot_state["commands"]
-        ]
-        response = BotStateResponse(commands=command_list, menu_button_type=bot_state["menu_button_type"])
+        # Get commands via TL request
+        scope = BotCommandScopeDefault()
+        commands = await demo_server.client(GetBotCommandsRequest(scope=scope, lang_code=""))
+        command_list = [BotCommandInfo(command=cmd.command, description=cmd.description) for cmd in commands]
+
+        # Get menu button via TL request
+        menu_button = await demo_server.client(GetBotMenuButtonRequest(user_id=InputPeerUser(user_id=0, access_hash=0)))
+        menu_type = "commands" if isinstance(menu_button, BotMenuButtonCommands) else "default"
+
+        response = BotStateResponse(commands=command_list, menu_button_type=menu_type)
 
         if demo_server.on_action is not None:
             await demo_server.on_action("get_state", demo_server.client)

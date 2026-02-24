@@ -75,7 +75,7 @@ class ServerlessTelegramClientCore:
     async def get_dialogs(self) -> list[str]:
         return []
 
-    async def get_bot_state(self) -> dict[str, list[dict[str, str]] | str]:
+    async def _get_bot_state(self) -> dict[str, list[dict[str, str]] | str]:
         """Get bot state including commands and menu button type."""
         scope = BotCommandScopeChat(chat_id=self.chat_id)
         commands = await self.application.bot.get_my_commands(scope=scope)

@@ -137,7 +137,7 @@ def test_poll_vote_endpoint() -> None:
         def __init__(self) -> None:
             self.connect = AsyncMock()
             self.disconnect = AsyncMock()
-            self.get_bot_state = AsyncMock(return_value={"commands": [], "menu_button_type": "default"})
+
             self.conversation = Mock()
 
             self.get_messages = AsyncMock()

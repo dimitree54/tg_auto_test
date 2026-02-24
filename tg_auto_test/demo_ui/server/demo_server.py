@@ -53,10 +53,6 @@ class DemoClientProtocol(Protocol):
         """Disconnect the client."""
         ...
 
-    async def get_bot_state(self) -> dict[str, list[dict[str, str]] | str]:
-        """Get bot state including commands and menu button type."""
-        ...
-
     def conversation(self, peer: str, timeout: float) -> DemoConversationProtocol:
         """Create a conversation context manager."""
         ...

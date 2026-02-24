@@ -1,3 +1,5 @@
+from typing import cast
+
 from telethon.tl import functions, types
 
 from tg_auto_test.test_utils.serverless_telegram_client_core import ServerlessTelegramClientCore
@@ -15,8 +17,11 @@ TypeBotCommandScope = (
 
 def _scope_key_from_telethon(scope: TypeBotCommandScope) -> str:
     """Convert a Telethon scope object to the same key format used by the stub."""
-    if isinstance(scope, types.BotCommandScopePeer):
-        return f"chat:{scope.peer.user_id}"
+    if isinstance(scope, (types.BotCommandScopePeer, types.BotCommandScopePeerUser)):
+        peer = scope.peer
+        if isinstance(peer, types.InputPeerUser):
+            return f"chat:{peer.user_id}"
+        return "default"
     if isinstance(scope, types.BotCommandScopeDefault):
         return "default"
     return "default"
@@ -54,7 +59,13 @@ async def handle_telethon_request(client: ServerlessTelegramClientCore, request:
         if invoice.msg_id not in invoices:
             raise RuntimeError(f"Unknown invoice message id: {invoice.msg_id}")
         invoice_data = invoices[invoice.msg_id]
-        tg_invoice = types.Invoice(currency=invoice_data["currency"], prices=invoice_data["prices"])
+        currency = invoice_data["currency"]
+        prices = invoice_data["prices"]
+        if not isinstance(currency, str):
+            raise ValueError(f"Expected currency to be str, got {type(currency)}")
+        if not isinstance(prices, list):
+            raise ValueError(f"Expected prices to be list, got {type(prices)}")
+        tg_invoice = types.Invoice(currency=cast(str, currency), prices=cast(list, prices))
         return types.payments.PaymentForm(
             form_id=invoice.msg_id,
             bot_id=999_999,
