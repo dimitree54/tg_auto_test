@@ -70,7 +70,7 @@ async def handle_telethon_request(client: ServerlessTelegramClientCore, request:
         invoice = request.invoice
         if not isinstance(invoice, types.InputInvoiceMessage):
             raise NotImplementedError(f"Unsupported invoice type: {type(invoice)!r}")
-        await client.simulate_stars_payment(invoice.msg_id)
+        await client._simulate_stars_payment(invoice.msg_id)  # noqa: SLF001
         return types.payments.PaymentResult(
             updates=types.Updates(updates=[], users=[], chats=[], date=None, seq=0),
         )

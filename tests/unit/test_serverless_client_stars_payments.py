@@ -1,6 +1,8 @@
 """Test Telegram Stars payment handling with ServerlessTelegramClient."""
 
 import pytest
+from telethon.tl.functions.payments import SendStarsFormRequest
+from telethon.tl.types import InputInvoiceMessage, InputPeerEmpty
 
 from tests.unit.helpers_ptb_app import build_test_application
 from tg_auto_test.test_utils.serverless_telegram_client import ServerlessTelegramClient
@@ -43,9 +45,13 @@ async def test_successful_stars_payment() -> None:
 
             assert invoice_msg.invoice is not None
 
-            # Simulate payment
-            await client.simulate_stars_payment(invoice_msg.id)
-            payment_confirmation = await conv.get_response()
+            # Simulate payment using Telethon SendStarsFormRequest
+            request = SendStarsFormRequest(
+                form_id=invoice_msg.id,
+                invoice=InputInvoiceMessage(peer=InputPeerEmpty(), msg_id=invoice_msg.id),
+            )
+            await client(request)
+            payment_confirmation = client._pop_response()  # noqa: SLF001
 
             assert payment_confirmation.text == "Payment received!"
     finally:
@@ -72,13 +78,21 @@ async def test_multiple_invoices() -> None:
             assert invoice2.invoice is not None
 
             # Pay first invoice
-            await client.simulate_stars_payment(invoice1.id)
-            payment1 = await conv.get_response()
+            request1 = SendStarsFormRequest(
+                form_id=invoice1.id,
+                invoice=InputInvoiceMessage(peer=InputPeerEmpty(), msg_id=invoice1.id),
+            )
+            await client(request1)
+            payment1 = client._pop_response()  # noqa: SLF001
             assert payment1.text == "Payment received!"
 
             # Pay second invoice
-            await client.simulate_stars_payment(invoice2.id)
-            payment2 = await conv.get_response()
+            request2 = SendStarsFormRequest(
+                form_id=invoice2.id,
+                invoice=InputInvoiceMessage(peer=InputPeerEmpty(), msg_id=invoice2.id),
+            )
+            await client(request2)
+            payment2 = client._pop_response()  # noqa: SLF001
             assert payment2.text == "Payment received!"
     finally:
         await client.disconnect()
@@ -92,8 +106,12 @@ async def test_unknown_invoice_payment_fails() -> None:
     try:
         async with client.conversation("test_bot"):
             # Try to pay for non-existent invoice
+            request = SendStarsFormRequest(
+                form_id=999,
+                invoice=InputInvoiceMessage(peer=InputPeerEmpty(), msg_id=999),
+            )
             with pytest.raises(RuntimeError, match="Unknown invoice message id: 999"):
-                await client.simulate_stars_payment(999)
+                await client(request)
     finally:
         await client.disconnect()
 
@@ -128,8 +146,12 @@ async def test_payment_reduces_stars_balance() -> None:
             invoice_msg = await conv.get_response()
 
             # Make payment
-            await client.simulate_stars_payment(invoice_msg.id)
-            await conv.get_response()  # Payment confirmation
+            request = SendStarsFormRequest(
+                form_id=invoice_msg.id,
+                invoice=InputInvoiceMessage(peer=InputPeerEmpty(), msg_id=invoice_msg.id),
+            )
+            await client(request)
+            client._pop_response()  # noqa: SLF001 # Payment confirmation
 
             # Balance should be reduced
             new_balance = client._stars_balance  # noqa: SLF001

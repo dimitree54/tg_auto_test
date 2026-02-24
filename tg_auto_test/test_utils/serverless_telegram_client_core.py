@@ -2,7 +2,7 @@ from collections import deque
 from pathlib import Path
 from typing import Union
 
-from telegram import BotCommandScopeChat, MenuButtonDefault, Update
+from telegram import BotCommandScopeChat, MenuButtonDefault
 from telegram.ext import Application
 from telethon.tl.types import LabeledPrice, User
 
@@ -16,9 +16,10 @@ from tg_auto_test.test_utils.poll_vote_handler import (
     handle_send_vote_request_for_client,
 )
 from tg_auto_test.test_utils.ptb_types import BuildApplication
-from tg_auto_test.test_utils.response_processor import extract_responses
 from tg_auto_test.test_utils.serverless_client_helpers import ServerlessClientHelpers
+from tg_auto_test.test_utils.serverless_stars_payment import StarsPaymentHandler
 from tg_auto_test.test_utils.serverless_telegram_conversation import ServerlessTelegramConversation
+from tg_auto_test.test_utils.serverless_update_processor import ServerlessUpdateProcessor
 from tg_auto_test.test_utils.stub_request import StubTelegramRequest
 from tg_auto_test.test_utils.telethon_compatible_message import TelethonCompatibleMessage
 
@@ -45,6 +46,8 @@ class ServerlessTelegramClientCore:
         self._stars_balance = 100
         self._invoices: dict[int, dict[str, str | int | list[LabeledPrice]]] = {}
         self._poll_tracker = PollTracker()
+        self._stars_payment_handler = StarsPaymentHandler()
+        self._update_processor = ServerlessUpdateProcessor()
 
     @property
     def api_calls(self) -> list[TelegramApiCall]:
@@ -168,23 +171,10 @@ class ServerlessTelegramClientCore:
         )
 
     async def _process_message_update(self, payload: dict[str, JsonValue]) -> ServerlessMessage:
-        new_calls = await self._process_update(payload)
-        responses = extract_responses(
-            new_calls, self.request.file_store, self._invoices, self._handle_click, self._poll_tracker
-        )
-        if not responses:
-            raise RuntimeError("Bot did not send a recognizable response.")
-        for resp in responses:
-            self._outbox.append(resp)
-        return responses[-1]
+        return await self._update_processor.process_message_update(self, payload)
 
     async def _process_update(self, payload: dict[str, JsonValue]) -> list[TelegramApiCall]:
-        if not self._connected:
-            raise RuntimeError("Call connect() before processing payloads.")
-        calls_before = len(self.request.calls)
-        update = Update.de_json(payload, self.application.bot)
-        await self.application.process_update(update)
-        return self.request.calls[calls_before:]
+        return await self._update_processor.process_update(self, payload)
 
     async def _handle_click(self, message_id: int, data: str) -> ServerlessMessage:
         outbox_before = len(self._outbox)
@@ -192,3 +182,8 @@ class ServerlessTelegramClientCore:
         while len(self._outbox) > outbox_before:
             self._outbox.pop()
         return result
+
+    async def _simulate_stars_payment(self, invoice_message_id: int) -> None:
+        self._stars_balance = await self._stars_payment_handler.simulate_payment(
+            self, invoice_message_id, self._invoices, self._stars_balance, self._helpers
+        )

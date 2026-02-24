@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING  # noqa: TID251
 from fastapi import FastAPI, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
 from telethon.tl.functions.messages import SendVoteRequest
-from telethon.tl.types import InputPeerEmpty
+from telethon.tl.functions.payments import SendStarsFormRequest
+from telethon.tl.types import InputInvoiceMessage, InputPeerEmpty
 
 from tg_auto_test.demo_ui.server.api_models import (
     BotCommandInfo,
@@ -112,8 +113,13 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
     @app.post("/api/invoice/pay")
     async def pay_invoice(req: InvoicePayRequest) -> MessageResponse:
-        # Stars payments require ServerlessTelegramClient-specific method
-        await demo_server.client.simulate_stars_payment(req.message_id)
+        # Create SendStarsFormRequest with InputInvoiceMessage
+        request = SendStarsFormRequest(
+            form_id=req.message_id,
+            invoice=InputInvoiceMessage(peer=InputPeerEmpty(), msg_id=req.message_id),
+        )
+        # Execute the request via client
+        await demo_server.client(request)
         response = demo_server.client._pop_response()  # noqa: SLF001
         result = await serialize_message(response, demo_server.file_store)
 

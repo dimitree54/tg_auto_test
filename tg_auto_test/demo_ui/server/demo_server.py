@@ -61,10 +61,6 @@ class DemoClientProtocol(Protocol):
         """Create a conversation context manager."""
         ...
 
-    async def simulate_stars_payment(self, message_id: int) -> None:
-        """Simulate a Stars payment for the given invoice message ID."""
-        ...
-
     def _pop_response(self) -> ServerlessMessage:
         """Pop the most recent response from the client."""
         ...
