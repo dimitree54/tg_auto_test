@@ -49,7 +49,7 @@ class StarsPaymentHandler:
             "message": {
                 "message_id": helpers.next_message_id_value(),
                 "date": 0,
-                "chat": {"id": client.chat_id, "type": "private"},
+                "chat": {"id": client._chat_id, "type": "private"},  # noqa: SLF001
                 "from": helpers.user_dict(),
                 "successful_payment": {
                     "currency": currency,

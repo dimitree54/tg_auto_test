@@ -15,10 +15,10 @@ class ServerlessUpdateProcessor:
     ) -> list[TelegramApiCall]:
         if not client._connected:  # noqa: SLF001
             raise RuntimeError("Call connect() before processing payloads.")
-        calls_before = len(client.request.calls)
-        update = Update.de_json(payload, client.application.bot)
-        await client.application.process_update(update)
-        return client.request.calls[calls_before:]
+        calls_before = len(client._request.calls)  # noqa: SLF001
+        update = Update.de_json(payload, client._application.bot)  # noqa: SLF001
+        await client._application.process_update(update)  # noqa: SLF001
+        return client._request.calls[calls_before:]  # noqa: SLF001
 
     async def process_message_update(
         self,
@@ -28,7 +28,7 @@ class ServerlessUpdateProcessor:
         new_calls = await self.process_update(client, payload)
         responses = extract_responses(
             new_calls,
-            client.request.file_store,
+            client._request.file_store,  # noqa: SLF001
             client._invoices,
             client._handle_click,
             client._poll_tracker,  # noqa: SLF001

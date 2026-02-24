@@ -2,19 +2,22 @@ from collections import deque
 from pathlib import Path
 from typing import Union
 
-from telegram import BotCommandScopeChat
 from telegram.ext import Application
 from telethon.tl.types import LabeledPrice, User
 
-from tg_auto_test.test_utils.file_message_builder import build_file_payload
-from tg_auto_test.test_utils.json_types import JsonValue
-from tg_auto_test.test_utils.media_types import detect_content_type
-from tg_auto_test.test_utils.models import FileData, ServerlessMessage, TelegramApiCall
-from tg_auto_test.test_utils.poll_vote_handler import (
-    PollTracker,
-    create_callback_query_payload,
-    handle_send_vote_request_for_client,
+from tg_auto_test.test_utils.bot_state_utils import get_client_bot_state
+from tg_auto_test.test_utils.file_processing_utils import (
+    connect_client,
+    disconnect_client,
+    handle_click_wrapper,
+    handle_send_vote_request_for_client_wrapper,
+    pop_client_response,
+    process_complete_file_message,
+    simulate_stars_payment_wrapper,
 )
+from tg_auto_test.test_utils.json_types import JsonValue
+from tg_auto_test.test_utils.models import ServerlessMessage, TelegramApiCall
+from tg_auto_test.test_utils.poll_vote_handler import PollTracker, create_callback_query_payload
 from tg_auto_test.test_utils.ptb_types import BuildApplication
 from tg_auto_test.test_utils.serverless_client_helpers import ServerlessClientHelpers
 from tg_auto_test.test_utils.serverless_stars_payment import StarsPaymentHandler
@@ -36,10 +39,10 @@ class ServerlessTelegramClientCore:
         bot_username: str = "test_bot",
         bot_first_name: str = "TestBot",
     ) -> None:
-        self.request = StubTelegramRequest(bot_username=bot_username, bot_first_name=bot_first_name)
-        builder = Application.builder().token(_FAKE_TOKEN).request(self.request)
-        self.application = build_application(builder)
-        self.chat_id, self.user_id, self.first_name = user_id, user_id, first_name
+        self._request = StubTelegramRequest(bot_username=bot_username, bot_first_name=bot_first_name)
+        builder = Application.builder().token(_FAKE_TOKEN).request(self._request)
+        self._application = build_application(builder)
+        self._chat_id, self._user_id, self._first_name = user_id, user_id, first_name
         self._helpers = ServerlessClientHelpers(user_id, first_name)
         self._connected = False
         self._outbox: deque[ServerlessMessage] = deque()
@@ -52,64 +55,112 @@ class ServerlessTelegramClientCore:
     @property
     def _api_calls(self) -> list[TelegramApiCall]:
         """Read-only view of all API calls made through this client."""
-        return list(self.request.calls)
+        return list(self._request.calls)
 
     @property
     def _last_api_call(self) -> TelegramApiCall | None:
         """The last API call made through this client, or None if no calls were made."""
-        return self.request.calls[-1] if self.request.calls else None
+        return self._request.calls[-1] if self._request.calls else None
 
     async def connect(self) -> None:
-        if not self._connected:
-            await self.application.initialize()
-            self._connected = True
+        await connect_client(self)
 
     async def disconnect(self) -> None:
-        if self._connected:
-            await self.application.shutdown()
-            self._connected = False
+        await disconnect_client(self)
 
-    async def get_me(self) -> User:
-        return User(id=self.user_id, is_self=True, first_name=self.first_name, bot=False, access_hash=0)
+    async def get_me(self, input_peer: bool = False) -> User:
+        if input_peer is True:
+            raise NotImplementedError("input_peer=True not supported")
+        return User(id=self._user_id, is_self=True, first_name=self._first_name, bot=False, access_hash=0)
 
-    async def get_dialogs(self) -> list[str]:
+    async def get_dialogs(
+        self,
+        limit: int | None = None,
+        *,
+        offset_date: object = None,
+        offset_id: int = 0,
+        offset_peer: object = None,
+        ignore_pinned: bool = False,
+        ignore_migrated: bool = False,
+        folder: int | None = None,
+        archived: bool = False,
+    ) -> list[object]:
+        del limit, offset_date, offset_id, offset_peer, ignore_pinned, ignore_migrated, folder, archived
         return []
 
     async def _get_bot_state(self) -> dict[str, list[dict[str, str]] | str]:
-        """Get bot state including commands and menu button type."""
-        scope = BotCommandScopeChat(chat_id=self.chat_id)
-        commands = await self.application.bot.get_my_commands(scope=scope)
-        menu_btn = await self.application.bot.get_chat_menu_button(chat_id=self.chat_id)
-        command_list = [{"command": cmd.command, "description": cmd.description} for cmd in commands]
-        return {"commands": command_list, "menu_button_type": str(getattr(menu_btn, "type", "default"))}
+        return await get_client_bot_state(self._application, self._chat_id)
 
     async def get_messages(
-        self, entity: str, ids: int | list[int]
+        self,
+        entity: object,
+        limit: int | None = None,
+        *,
+        offset_date: object = None,
+        offset_id: int = 0,
+        max_id: int = 0,
+        min_id: int = 0,
+        add_offset: int = 0,
+        search: str | None = None,
+        filter: object = None,
+        from_user: object = None,
+        wait_time: float | None = None,
+        ids: int | list[int] | None = None,
+        reverse: bool = False,
+        reply_to: int | None = None,
+        scheduled: bool = False,
     ) -> Union["TelethonCompatibleMessage", list["TelethonCompatibleMessage"], None]:
-        """Get messages by ID(s) for Telethon compatibility."""
-        del entity  # Not used in serverless mode
-        if isinstance(ids, int):
-            return TelethonCompatibleMessage(ids, self)
-        return [TelethonCompatibleMessage(msg_id, self) for msg_id in ids]
+        del entity
+        if ids is None and limit is None:
+            raise ValueError("Either 'ids' or 'limit' must be provided")
+        if [
+            limit,
+            offset_date,
+            offset_id,
+            max_id,
+            min_id,
+            add_offset,
+            search,
+            filter,
+            from_user,
+            wait_time,
+            reverse,
+            reply_to,
+            scheduled,
+        ] != [None, None, 0, 0, 0, 0, None, None, None, None, False, None, False]:
+            raise NotImplementedError("Parameter not supported")
+        return (
+            TelethonCompatibleMessage(ids, self)
+            if isinstance(ids, int)
+            else ([TelethonCompatibleMessage(msg_id, self) for msg_id in ids] if ids is not None else None)
+        )
 
-    def conversation(self, bot_username: str, timeout: int = 10) -> ServerlessTelegramConversation:
-        del bot_username, timeout
+    def conversation(
+        self,
+        entity: object,
+        *,
+        timeout: float = 60.0,
+        total_timeout: float | None = None,
+        max_messages: int = 100,
+        exclusive: bool = True,
+        replies_are_responses: bool = True,
+    ) -> ServerlessTelegramConversation:
+        del entity, timeout
+        if [total_timeout, max_messages, exclusive, replies_are_responses] != [None, 100, True, True]:
+            raise NotImplementedError("Parameter not supported")
         return ServerlessTelegramConversation(client=self)
 
     def _pop_response(self) -> ServerlessMessage:
-        if not self._outbox:
-            raise RuntimeError("No pending response. Call send_message() first.")
-        return self._outbox.popleft()
+        return pop_client_response(self)  # type: ignore
 
     async def _process_text_message(self, text: str) -> ServerlessMessage:
-        self._outbox.clear()  # Auto-clear previous responses
-        payload, msg = self._helpers.base_message_update(self.chat_id)
+        self._outbox.clear()
+        payload, msg = self._helpers.base_message_update(self._chat_id)
         msg["text"] = text
         if text.startswith("/"):
-            cmd_len = text.find(" ") if " " in text else len(text)
-            entity: dict[str, JsonValue] = {"offset": 0, "length": cmd_len, "type": "bot_command"}
-            entities: list[JsonValue] = [entity]
-            msg["entities"] = entities
+            msg["entities"] = [
+                {"offset": 0, "length": text.find(" ") if " " in text else len(text), "type": "bot_command"}
+            ]
         return await self._process_message_update(payload)
 
     async def _process_file_message(
@@ -121,48 +172,20 @@ class ServerlessTelegramClientCore:
         voice_note: bool = False,
         video_note: bool = False,
     ) -> ServerlessMessage:
-        self._outbox.clear()  # Auto-clear previous responses
-        file_id = self._helpers.make_file_id()
-        file_bytes = file if isinstance(file, bytes) else file.read_bytes()
-        fname = file.name if isinstance(file, Path) else "file"
-        ct = detect_content_type(fname, force_document, voice_note, video_note)
-        self.request.file_store[file_id] = FileData(data=file_bytes, filename=fname, content_type=ct)
-        payload, msg = self._helpers.base_message_update(self.chat_id)
-        build_file_payload(
-            msg,
-            file_id,
-            file,
-            file_bytes=file_bytes,
-            caption=caption,
-            force_document=force_document,
-            voice_note=voice_note,
-            video_note=video_note,
-        )
-        return await self._process_message_update(payload)
+        return await process_complete_file_message(
+            self, file, caption=caption, force_document=force_document, voice_note=voice_note, video_note=video_note
+        )  # type: ignore
 
     async def _process_callback_query(self, message_id: int, data: str) -> ServerlessMessage:
-        payload = create_callback_query_payload(
-            message_id,
-            data,
-            self.chat_id,
-            self.request._bot_user(),
-            self._helpers,  # noqa: SLF001
+        return await self._process_message_update(
+            create_callback_query_payload(message_id, data, self._chat_id, self._request._bot_user(), self._helpers)
         )
-        return await self._process_message_update(payload)
 
     async def _handle_send_vote_request(
         self, peer: object, message_id: int, option_bytes: list[bytes]
     ) -> ServerlessMessage:
-        """Handle Telethon SendVoteRequest by mapping to poll_answer update."""
-        del peer  # Ignored in serverless mode
-        return await handle_send_vote_request_for_client(
-            self._poll_tracker,
-            self._helpers,
-            self._process_message_update,
-            self._outbox,
-            message_id,
-            option_bytes,
-        )
+        del peer
+        return await handle_send_vote_request_for_client_wrapper(self, None, message_id, option_bytes)  # type: ignore
 
     async def _process_message_update(self, payload: dict[str, JsonValue]) -> ServerlessMessage:
         return await self._update_processor.process_message_update(self, payload)
@@ -171,13 +194,7 @@ class ServerlessTelegramClientCore:
         return await self._update_processor.process_update(self, payload)
 
     async def _handle_click(self, message_id: int, data: str) -> ServerlessMessage:
-        outbox_before = len(self._outbox)
-        result = await self._process_callback_query(message_id, data)
-        while len(self._outbox) > outbox_before:
-            self._outbox.pop()
-        return result
+        return await handle_click_wrapper(self, message_id, data)  # type: ignore
 
     async def _simulate_stars_payment(self, invoice_message_id: int) -> None:
-        self._stars_balance = await self._stars_payment_handler.simulate_payment(
-            self, invoice_message_id, self._invoices, self._stars_balance, self._helpers
-        )
+        await simulate_stars_payment_wrapper(self, invoice_message_id)

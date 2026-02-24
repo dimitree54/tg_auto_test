@@ -31,8 +31,8 @@ class ServerlessTelegramClient(ServerlessTelegramClientCore):
             bot_first_name=bot_first_name,
         )
 
-    async def get_input_entity(self, entity: str) -> InputPeerUser:
-        del entity
+    async def get_input_entity(self, peer: object) -> InputPeerUser:
+        del peer
         return InputPeerUser(user_id=999_999, access_hash=0)
 
     async def __call__(self, request: TelethonRequest) -> TelethonResponse:

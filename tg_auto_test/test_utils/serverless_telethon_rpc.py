@@ -92,33 +92,33 @@ async def handle_telethon_request(client: ServerlessTelegramClientCore, request:
 
     if isinstance(request, functions.bots.GetBotCommandsRequest):
         key = _scope_key_from_telethon(request.scope)
-        stored = client.request.get_scoped_commands(key)
+        stored = client._request.get_scoped_commands(key)  # noqa: SLF001
         return [types.BotCommand(command=cmd["command"], description=cmd["description"]) for cmd in stored]
 
     if isinstance(request, functions.bots.GetBotMenuButtonRequest):
-        menu = client.request.get_menu_button()
+        menu = client._request.get_menu_button()  # noqa: SLF001
         if menu is not None and menu.get("type") == "commands":
             return types.BotMenuButtonCommands()
         return types.BotMenuButtonDefault()
 
     if isinstance(request, functions.bots.ResetBotCommandsRequest):
         key = _scope_key_from_telethon(request.scope)
-        client.request._scoped_commands.pop(key, None)
+        client._request._scoped_commands.pop(key, None)  # noqa: SLF001
         return True
 
     if isinstance(request, functions.bots.SetBotCommandsRequest):
         key = _scope_key_from_telethon(request.scope)
         commands = [{"command": cmd.command, "description": cmd.description} for cmd in request.commands]
-        client.request._scoped_commands[key] = commands
+        client._request._scoped_commands[key] = commands  # noqa: SLF001
         return True
 
     if isinstance(request, functions.bots.SetBotMenuButtonRequest):
         if isinstance(request.button, types.BotMenuButtonDefault):
-            client.request._menu_button = None
+            client._request._menu_button = None  # noqa: SLF001
         elif isinstance(request.button, types.BotMenuButtonCommands):
-            client.request._menu_button = {"type": "commands"}
+            client._request._menu_button = {"type": "commands"}  # noqa: SLF001
         else:
-            client.request._menu_button = None
+            client._request._menu_button = None  # noqa: SLF001
         return True
 
     if isinstance(request, functions.messages.SendVoteRequest):

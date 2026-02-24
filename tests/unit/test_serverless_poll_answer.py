@@ -133,7 +133,7 @@ async def test_send_vote_request_api_call_structure() -> None:
     await client.connect()
     try:
         message_id, _ = await _setup_poll_and_get_message(client)
-        client.request.calls.clear()  # Clear previous API calls to focus on poll answer
+        client._request.calls.clear()  # noqa: SLF001 # Clear previous API calls to focus on poll answer
 
         # Vote for option 1 (Green)
         vote_request = SendVoteRequest(peer=InputPeerEmpty(), msg_id=message_id, options=[bytes([1])])
@@ -143,7 +143,7 @@ async def test_send_vote_request_api_call_structure() -> None:
         send_message_calls = [call for call in client._api_calls if call.api_method == "sendMessage"]  # noqa: SLF001
         assert len(send_message_calls) == 1
         call = send_message_calls[0]
-        assert str(call.parameters["chat_id"]) == str(client.user_id)
+        assert str(call.parameters["chat_id"]) == str(client._user_id)  # noqa: SLF001
         assert "voted for: Green" in str(call.parameters["text"])
     finally:
         await client.disconnect()

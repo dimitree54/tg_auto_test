@@ -7,7 +7,6 @@ while T3-T5 tasks fix the divergences.
 
 import inspect
 
-import pytest
 from telethon import TelegramClient
 
 from tg_auto_test.test_utils.serverless_telegram_client import ServerlessTelegramClient
@@ -17,7 +16,6 @@ from tg_auto_test.test_utils.serverless_telegram_client_core import ServerlessTe
 class TestTelegramClientConformance:
     """Test that our client classes conform to TelegramClient interface."""
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: conversation parameter name and defaults")
     def test_conversation_signature(self) -> None:
         """Test conversation() method signature matches Telethon."""
         telethon_sig = inspect.signature(TelegramClient.conversation)
@@ -48,7 +46,6 @@ class TestTelegramClientConformance:
                 f"Parameter '{name}' default mismatch: Telethon {telethon_param.default} vs Ours {our_param.default}"
             )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: get_messages parameters")
     def test_get_messages_signature(self) -> None:
         """Test get_messages() method signature matches Telethon."""
         telethon_sig = inspect.signature(TelegramClient.get_messages)
@@ -70,7 +67,6 @@ class TestTelegramClientConformance:
                 f"Parameter '{name}' kind mismatch: Telethon {telethon_param.kind} vs Ours {our_param.kind}"
             )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: get_me parameter")
     def test_get_me_signature(self) -> None:
         """Test get_me() method signature matches Telethon."""
         telethon_sig = inspect.signature(TelegramClient.get_me)
@@ -83,7 +79,6 @@ class TestTelegramClientConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: get_input_entity parameter name (peer vs entity)")
     def test_get_input_entity_signature(self) -> None:
         """Test get_input_entity() method signature matches Telethon."""
         telethon_sig = inspect.signature(TelegramClient.get_input_entity)
@@ -96,7 +91,6 @@ class TestTelegramClientConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: get_dialogs signature")
     def test_get_dialogs_signature(self) -> None:
         """Test get_dialogs() method signature matches Telethon."""
         telethon_sig = inspect.signature(TelegramClient.get_dialogs)

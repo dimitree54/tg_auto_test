@@ -75,7 +75,7 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
     @app.post("/api/message")
     async def send_message(req: TextMessageRequest) -> MessageResponse:
-        async with demo_server.client.conversation(demo_server.peer, demo_server.timeout) as conv:
+        async with demo_server.client.conversation(demo_server.peer, timeout=demo_server.timeout) as conv:
             await conv.send_message(req.text)
             response = await conv.get_response()
         result = await serialize_message(response, demo_server.file_store)

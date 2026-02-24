@@ -25,7 +25,7 @@ async def handle_file_upload(
     filename = file.filename or "file"
     content_type = file.content_type or "application/octet-stream"
 
-    async with demo_server.client.conversation(demo_server.peer, demo_server.timeout) as conv:
+    async with demo_server.client.conversation(demo_server.peer, timeout=demo_server.timeout) as conv:
         # Send bytes directly using Telethon API
         await conv.send_file(
             data,
