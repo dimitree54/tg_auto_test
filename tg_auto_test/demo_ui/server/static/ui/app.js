@@ -350,9 +350,7 @@ function ne() {
   const e = l();
   e.replyKeyboardEl.classList.remove("visible"), e.replyKeyboardEl.innerHTML = "";
 }
-function Me() {
-  return `<span class="meta">${I(/* @__PURE__ */ new Date())}</span>`;
-}
+
 function Se() {
   const e = l();
   e.messagesEl.scrollTop = e.messagesEl.scrollHeight;
@@ -374,7 +372,7 @@ function Pe(e, t) {
       r.className = "poll-option-btn", r.textContent = o.text, r.onclick = () => He(e.poll_id, [a]), i.appendChild(r);
     }), s.appendChild(i);
   }
-  s.innerHTML += Me(), n.messagesEl.appendChild(s), Se();
+  s.insertAdjacentHTML("beforeend", P()), n.messagesEl.appendChild(s), Se();
 }
 async function He(e, t) {
   l();
