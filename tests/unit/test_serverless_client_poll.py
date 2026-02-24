@@ -65,7 +65,7 @@ async def test_poll_api_call_structure() -> None:
             await conv.get_response()
 
             # Check API calls
-            api_calls = client.api_calls
+            api_calls = client._api_calls  # noqa: SLF001
             send_poll_calls = [call for call in api_calls if call.api_method == "sendPoll"]
             assert len(send_poll_calls) == 1
 
@@ -104,7 +104,7 @@ async def test_multiple_polls() -> None:
             assert msg1.poll.poll.id != msg2.poll.poll.id
 
             # Check that API calls have different poll IDs
-            api_calls = client.api_calls
+            api_calls = client._api_calls  # noqa: SLF001
             send_poll_calls = [call for call in api_calls if call.api_method == "sendPoll"]
             assert len(send_poll_calls) == 2
 

@@ -50,12 +50,12 @@ class ServerlessTelegramClientCore:
         self._update_processor = ServerlessUpdateProcessor()
 
     @property
-    def api_calls(self) -> list[TelegramApiCall]:
+    def _api_calls(self) -> list[TelegramApiCall]:
         """Read-only view of all API calls made through this client."""
         return list(self.request.calls)
 
     @property
-    def last_api_call(self) -> TelegramApiCall | None:
+    def _last_api_call(self) -> TelegramApiCall | None:
         """The last API call made through this client, or None if no calls were made."""
         return self.request.calls[-1] if self.request.calls else None
 

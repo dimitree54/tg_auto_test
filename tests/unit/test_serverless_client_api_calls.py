@@ -10,8 +10,8 @@ def test_api_calls_empty_initially() -> None:
     """Test that api_calls is empty before connecting."""
     client = ServerlessTelegramClient(build_application=build_test_application)
     # Before connecting, no calls should have been made
-    assert client.api_calls == []
-    assert client.last_api_call is None
+    assert client._api_calls == []  # noqa: SLF001
+    assert client._last_api_call is None  # noqa: SLF001
 
 
 @pytest.mark.asyncio
@@ -21,8 +21,8 @@ async def test_api_calls_after_connect() -> None:
     await client.connect()
     try:
         # After connecting, there should be a getMe call
-        assert len(client.api_calls) >= 1
-        last_call = client.last_api_call
+        assert len(client._api_calls) >= 1  # noqa: SLF001
+        last_call = client._last_api_call  # noqa: SLF001
         assert last_call is not None
         assert last_call.api_method == "getMe"
     finally:
@@ -40,10 +40,10 @@ async def test_api_calls_after_text_message() -> None:
             await conv.get_response()
 
         # Check that we have at least one API call
-        assert len(client.api_calls) > 0
+        assert len(client._api_calls) > 0  # noqa: SLF001
 
         # Check the last call
-        last_call = client.last_api_call
+        last_call = client._last_api_call  # noqa: SLF001
         assert last_call is not None
         assert last_call.api_method == "sendMessage"
         assert last_call.parameters.get("text") == "hello"
@@ -66,10 +66,10 @@ async def test_api_calls_after_file_message() -> None:
             await conv.get_response()
 
         # Check that we have API calls
-        assert len(client.api_calls) > 0
+        assert len(client._api_calls) > 0  # noqa: SLF001
 
         # Find the sendDocument call
-        send_document_calls = [call for call in client.api_calls if call.api_method == "sendDocument"]
+        send_document_calls = [call for call in client._api_calls if call.api_method == "sendDocument"]  # noqa: SLF001
         assert len(send_document_calls) == 1
 
         call = send_document_calls[0]
@@ -95,18 +95,18 @@ async def test_api_calls_multiple_messages() -> None:
             await conv.get_response()
 
         # Should have multiple API calls
-        assert len(client.api_calls) >= 2
+        assert len(client._api_calls) >= 2  # noqa: SLF001
 
         # Find sendMessage calls
-        send_message_calls = [call for call in client.api_calls if call.api_method == "sendMessage"]
+        send_message_calls = [call for call in client._api_calls if call.api_method == "sendMessage"]  # noqa: SLF001
         assert len(send_message_calls) >= 2
 
         # Check that the last call is indeed the last one we made
-        last_call = client.last_api_call
+        last_call = client._last_api_call  # noqa: SLF001
         assert last_call is not None
         # The last call could be sendMessage for "second" or some other call made after that
         # Let's just verify it's one of our calls
-        assert last_call in client.api_calls
+        assert last_call in client._api_calls  # noqa: SLF001
     finally:
         await client.disconnect()
 
@@ -121,7 +121,7 @@ async def test_telegram_api_call_dataclass() -> None:
             await conv.send_message("test")
             await conv.get_response()
 
-        last_call = client.last_api_call
+        last_call = client._last_api_call  # noqa: SLF001
         assert last_call is not None
         assert isinstance(last_call, TelegramApiCall)
 
@@ -149,8 +149,8 @@ async def test_api_calls_read_only() -> None:
             await conv.get_response()
 
         # Get the api_calls list
-        calls1 = client.api_calls
-        calls2 = client.api_calls
+        calls1 = client._api_calls  # noqa: SLF001
+        calls2 = client._api_calls  # noqa: SLF001
 
         # Should be different list instances (copies)
         assert calls1 is not calls2
@@ -163,7 +163,7 @@ async def test_api_calls_read_only() -> None:
         calls1.clear()
         assert len(calls1) == 0
 
-        calls3 = client.api_calls
+        calls3 = client._api_calls  # noqa: SLF001
         assert len(calls3) == original_length
     finally:
         await client.disconnect()
@@ -180,14 +180,14 @@ async def test_last_api_call_updates() -> None:
             await conv.send_message("first")
             await conv.get_response()
 
-            first_last_call = client.last_api_call
+            first_last_call = client._last_api_call  # noqa: SLF001
             assert first_last_call is not None
 
             # Second message
             await conv.send_message("second")
             await conv.get_response()
 
-            second_last_call = client.last_api_call
+            second_last_call = client._last_api_call  # noqa: SLF001
             assert second_last_call is not None
 
             # The last call should have changed

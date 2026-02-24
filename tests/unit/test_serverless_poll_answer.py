@@ -140,7 +140,7 @@ async def test_send_vote_request_api_call_structure() -> None:
         await client(vote_request)
 
         # Check that sendMessage was called as a result
-        send_message_calls = [call for call in client.api_calls if call.api_method == "sendMessage"]
+        send_message_calls = [call for call in client._api_calls if call.api_method == "sendMessage"]  # noqa: SLF001
         assert len(send_message_calls) == 1
         call = send_message_calls[0]
         assert str(call.parameters["chat_id"]) == str(client.user_id)
