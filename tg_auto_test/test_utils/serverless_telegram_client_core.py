@@ -2,7 +2,7 @@ from collections import deque
 from pathlib import Path
 from typing import Union
 
-from telegram import BotCommandScopeChat, MenuButtonDefault
+from telegram import BotCommandScopeChat
 from telegram.ext import Application
 from telethon.tl.types import LabeledPrice, User
 
@@ -82,12 +82,6 @@ class ServerlessTelegramClientCore:
         menu_btn = await self.application.bot.get_chat_menu_button(chat_id=self.chat_id)
         command_list = [{"command": cmd.command, "description": cmd.description} for cmd in commands]
         return {"commands": command_list, "menu_button_type": str(getattr(menu_btn, "type", "default"))}
-
-    async def clear_bot_state(self) -> None:
-        """Clear bot state including commands and menu button."""
-        scope = BotCommandScopeChat(chat_id=self.chat_id)
-        await self.application.bot.delete_my_commands(scope=scope)
-        await self.application.bot.set_chat_menu_button(chat_id=self.chat_id, menu_button=MenuButtonDefault())
 
     async def get_messages(
         self, entity: str, ids: int | list[int]

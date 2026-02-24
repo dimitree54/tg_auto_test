@@ -33,6 +33,9 @@ TelethonRequest = (
     | functions.payments.SendStarsFormRequest
     | functions.bots.GetBotCommandsRequest
     | functions.bots.GetBotMenuButtonRequest
+    | functions.bots.ResetBotCommandsRequest
+    | functions.bots.SetBotCommandsRequest
+    | functions.bots.SetBotMenuButtonRequest
     | functions.messages.SendVoteRequest
 )
 TelethonResponse = (
@@ -43,6 +46,7 @@ TelethonResponse = (
     | types.BotMenuButtonCommands
     | types.BotMenuButtonDefault
     | types.Updates
+    | bool
 )
 
 
@@ -96,6 +100,26 @@ async def handle_telethon_request(client: ServerlessTelegramClientCore, request:
         if menu is not None and menu.get("type") == "commands":
             return types.BotMenuButtonCommands()
         return types.BotMenuButtonDefault()
+
+    if isinstance(request, functions.bots.ResetBotCommandsRequest):
+        key = _scope_key_from_telethon(request.scope)
+        client.request._scoped_commands.pop(key, None)
+        return True
+
+    if isinstance(request, functions.bots.SetBotCommandsRequest):
+        key = _scope_key_from_telethon(request.scope)
+        commands = [{"command": cmd.command, "description": cmd.description} for cmd in request.commands]
+        client.request._scoped_commands[key] = commands
+        return True
+
+    if isinstance(request, functions.bots.SetBotMenuButtonRequest):
+        if isinstance(request.button, types.BotMenuButtonDefault):
+            client.request._menu_button = None
+        elif isinstance(request.button, types.BotMenuButtonCommands):
+            client.request._menu_button = {"type": "commands"}
+        else:
+            client.request._menu_button = None
+        return True
 
     if isinstance(request, functions.messages.SendVoteRequest):
         # Handle poll vote - delegate to new method that will be added to the core
