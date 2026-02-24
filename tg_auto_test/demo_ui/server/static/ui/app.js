@@ -403,7 +403,7 @@ function b(e, t) {
 }
 function se(e, t, n) {
   const s = l(), i = x(t), o = document.createElement("img");
-  o.className = "msg-photo", o.src = e, o.alt = "Photo", i.appendChild(o), n && (i.innerHTML += `<span class="caption">${S(n)}</span>`), i.innerHTML += P(), s.messagesEl.appendChild(i), o.addEventListener("load", () => $()), $();
+  o.className = "msg-photo", o.src = e, o.alt = "Photo", i.appendChild(o), n && i.insertAdjacentHTML("beforeend", `<span class="caption">${S(n)}</span>`), i.insertAdjacentHTML("beforeend", P()), s.messagesEl.appendChild(i), o.addEventListener("load", () => $()), $();
 }
 function ae(e, t, n) {
   const s = l(), i = x(t), o = document.createElement("div");
