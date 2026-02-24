@@ -65,7 +65,7 @@ class DemoClientProtocol(Protocol):
         """Simulate a Stars payment for the given invoice message ID."""
         ...
 
-    def pop_response(self) -> ServerlessMessage:
+    def _pop_response(self) -> ServerlessMessage:
         """Pop the most recent response from the client."""
         ...
 

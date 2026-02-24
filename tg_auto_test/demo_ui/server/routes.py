@@ -114,7 +114,7 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
     async def pay_invoice(req: InvoicePayRequest) -> MessageResponse:
         # Stars payments require ServerlessTelegramClient-specific method
         await demo_server.client.simulate_stars_payment(req.message_id)
-        response = demo_server.client.pop_response()
+        response = demo_server.client._pop_response()  # noqa: SLF001
         result = await serialize_message(response, demo_server.file_store)
 
         if demo_server.on_action is not None:
@@ -172,7 +172,7 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
         await demo_server.client(vote_request)
 
         # Get the response
-        response = demo_server.client.pop_response()
+        response = demo_server.client._pop_response()  # noqa: SLF001
 
         # Serialize the bot response
         result = await serialize_message(response, demo_server.file_store)

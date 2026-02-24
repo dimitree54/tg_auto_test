@@ -6,9 +6,9 @@ from tg_auto_test.test_utils.models import ServerlessMessage
 
 
 class ConversationClient(Protocol):
-    async def process_text_message(self, text: str) -> ServerlessMessage: ...
+    async def _process_text_message(self, text: str) -> ServerlessMessage: ...
 
-    async def process_file_message(
+    async def _process_file_message(
         self,
         file: Path | bytes,
         *,
@@ -18,9 +18,9 @@ class ConversationClient(Protocol):
         video_note: bool = False,
     ) -> ServerlessMessage: ...
 
-    def pop_response(self) -> ServerlessMessage: ...
+    def _pop_response(self) -> ServerlessMessage: ...
 
-    async def process_callback_query(self, message_id: int, data: str) -> ServerlessMessage: ...
+    async def _process_callback_query(self, message_id: int, data: str) -> ServerlessMessage: ...
 
 
 class ServerlessTelegramConversation:
@@ -39,7 +39,7 @@ class ServerlessTelegramConversation:
         del exc_type, exc, exc_tb
 
     async def send_message(self, text: str) -> None:
-        await self._client.process_text_message(text)
+        await self._client._process_text_message(text)  # noqa: SLF001
 
     async def send_file(
         self,
@@ -50,7 +50,7 @@ class ServerlessTelegramConversation:
         voice_note: bool = False,
         video_note: bool = False,
     ) -> None:
-        await self._client.process_file_message(
+        await self._client._process_file_message(  # noqa: SLF001
             file,
             caption=caption,
             force_document=force_document,
@@ -59,7 +59,7 @@ class ServerlessTelegramConversation:
         )
 
     async def get_response(self) -> ServerlessMessage:
-        return self._client.pop_response()
+        return self._client._pop_response()  # noqa: SLF001
 
     async def click_inline_button(self, message_id: int, callback_data: str) -> ServerlessMessage:
-        return await self._client.process_callback_query(message_id, callback_data)
+        return await self._client._process_callback_query(message_id, callback_data)  # noqa: SLF001

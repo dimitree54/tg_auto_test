@@ -144,7 +144,7 @@ def test_poll_vote_endpoint() -> None:
             self._call_log: list = []
             self._response = ServerlessMessage(id=456, text="You voted for: Red")
 
-        def pop_response(self) -> ServerlessMessage:
+        def _pop_response(self) -> ServerlessMessage:
             return self._response
 
         async def __call__(self, request: object) -> None:

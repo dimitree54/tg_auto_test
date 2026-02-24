@@ -99,12 +99,12 @@ class ServerlessTelegramClientCore:
         del bot_username, timeout
         return ServerlessTelegramConversation(client=self)
 
-    def pop_response(self) -> ServerlessMessage:
+    def _pop_response(self) -> ServerlessMessage:
         if not self._outbox:
             raise RuntimeError("No pending response. Call send_message() first.")
         return self._outbox.popleft()
 
-    async def process_text_message(self, text: str) -> ServerlessMessage:
+    async def _process_text_message(self, text: str) -> ServerlessMessage:
         self._outbox.clear()  # Auto-clear previous responses
         payload, msg = self._helpers.base_message_update(self.chat_id)
         msg["text"] = text
@@ -115,7 +115,7 @@ class ServerlessTelegramClientCore:
             msg["entities"] = entities
         return await self._process_message_update(payload)
 
-    async def process_file_message(
+    async def _process_file_message(
         self,
         file: Path | bytes,
         *,
@@ -143,7 +143,7 @@ class ServerlessTelegramClientCore:
         )
         return await self._process_message_update(payload)
 
-    async def process_callback_query(self, message_id: int, data: str) -> ServerlessMessage:
+    async def _process_callback_query(self, message_id: int, data: str) -> ServerlessMessage:
         payload = create_callback_query_payload(
             message_id,
             data,
@@ -188,7 +188,7 @@ class ServerlessTelegramClientCore:
 
     async def _handle_click(self, message_id: int, data: str) -> ServerlessMessage:
         outbox_before = len(self._outbox)
-        result = await self.process_callback_query(message_id, data)
+        result = await self._process_callback_query(message_id, data)
         while len(self._outbox) > outbox_before:
             self._outbox.pop()
         return result

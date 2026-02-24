@@ -8,7 +8,7 @@ from tg_auto_test.test_utils.models import ServerlessMessage
 class CallbackClient(Protocol):
     """Protocol for clients that can process callback queries."""
 
-    async def process_callback_query(self, message_id: int, data: str) -> ServerlessMessage: ...
+    async def _process_callback_query(self, message_id: int, data: str) -> ServerlessMessage: ...
 
 
 class TelethonCompatibleMessage:
@@ -22,4 +22,4 @@ class TelethonCompatibleMessage:
         """Click a button on this message using Telethon-style API."""
         if isinstance(data, bytes):
             data = data.decode()
-        return await self._client.process_callback_query(self.id, data)
+        return await self._client._process_callback_query(self.id, data)  # noqa: SLF001
