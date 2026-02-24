@@ -18,7 +18,6 @@ conversation
 send_message
 send_file
 get_response
-click_inline_button
 get_scoped_commands
 get_menu_button
 

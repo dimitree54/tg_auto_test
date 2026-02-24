@@ -60,6 +60,3 @@ class ServerlessTelegramConversation:
 
     async def get_response(self) -> ServerlessMessage:
         return self._client._pop_response()  # noqa: SLF001
-
-    async def click_inline_button(self, message_id: int, callback_data: str) -> ServerlessMessage:
-        return await self._client._process_callback_query(message_id, callback_data)  # noqa: SLF001

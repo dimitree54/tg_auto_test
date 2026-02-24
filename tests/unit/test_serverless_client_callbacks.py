@@ -1,9 +1,12 @@
 """Test inline button callback handling with ServerlessTelegramClient."""
 
+from typing import cast
+
 import pytest
 
 from tests.unit.helpers_ptb_app import build_test_application
 from tg_auto_test.test_utils.serverless_telegram_client import ServerlessTelegramClient
+from tg_auto_test.test_utils.telethon_compatible_message import TelethonCompatibleMessage
 
 
 @pytest.mark.asyncio
@@ -58,18 +61,19 @@ async def test_different_callback_data() -> None:
 
 
 @pytest.mark.asyncio
-async def test_click_via_conversation() -> None:
-    """Test clicking buttons via conversation.click_inline_button method."""
+async def test_click_via_get_messages() -> None:
+    """Test clicking buttons via get_messages + message.click() (Telethon pattern)."""
     client = ServerlessTelegramClient(build_application=build_test_application)
     await client.connect()
     try:
         async with client.conversation("test_bot") as conv:
-            # Send command to get inline keyboard
             await conv.send_message("/inline")
             msg_with_buttons = await conv.get_response()
 
-            # Click using conversation method
-            response_msg = await conv.click_inline_button(msg_with_buttons.id, "opt_a")
+            # Use Telethon pattern: get message, then click
+            message = await client.get_messages("test_bot", ids=msg_with_buttons.id)
+            message = cast(TelethonCompatibleMessage, message)
+            response_msg = await message.click(data=b"opt_a")
 
             assert response_msg.text == "You chose: opt_a"
     finally:

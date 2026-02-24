@@ -79,7 +79,6 @@ Async context manager for message exchange:
 - `await conv.send_message(text: str)` — send text message
 - `await conv.send_file(file: Path | bytes, *, caption: str = "", force_document: bool = False, voice_note: bool = False, video_note: bool = False)` — send file
 - `await conv.get_response() -> ServerlessMessage` — get bot's response
-- `await conv.click_inline_button(message_id: int, callback_data: str) -> ServerlessMessage` — click inline button
 
 ### ServerlessMessage
 
