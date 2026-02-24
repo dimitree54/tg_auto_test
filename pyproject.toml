@@ -1,6 +1,6 @@
 [project]
 name = "tg-auto-test"
-version = "0.5.0"
+version = "0.5.1"
 description = "Serverless Telegram bot testing library"
 requires-python = ">=3.12"
 dependencies = [
