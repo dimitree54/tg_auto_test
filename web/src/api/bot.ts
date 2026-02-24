@@ -33,6 +33,6 @@ export async function getState(): Promise<BotStateResponse> {
   return await getJson<BotStateResponse>('/api/state');
 }
 
-export async function votePoll(pollId: string, optionIds: number[]): Promise<MessageResponse> {
-  return await postJson<MessageResponse>('/api/poll/vote', { poll_id: pollId, option_ids: optionIds });
+export async function votePoll(messageId: number, optionIds: number[]): Promise<MessageResponse> {
+  return await postJson<MessageResponse>('/api/poll/vote', { message_id: messageId, option_ids: optionIds });
 }

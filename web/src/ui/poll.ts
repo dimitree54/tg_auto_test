@@ -41,7 +41,7 @@ export function addPollMessage(data: MessageResponse, type: BubbleType): void {
   }
 
   // Add poll options as clickable buttons
-  if (data.poll_options && data.poll_id) {
+  if (data.poll_options && data.message_id) {
     const optionsEl = document.createElement('div');
     optionsEl.className = 'poll-options';
 
@@ -49,7 +49,7 @@ export function addPollMessage(data: MessageResponse, type: BubbleType): void {
       const button = document.createElement('button');
       button.className = 'poll-option-btn';
       button.textContent = option.text;
-      button.onclick = () => handlePollVote(data.poll_id!, [index]);
+      button.onclick = () => handlePollVote(data.message_id, [index]);
       optionsEl.appendChild(button);
     });
 
@@ -64,7 +64,7 @@ export function addPollMessage(data: MessageResponse, type: BubbleType): void {
   scrollBottom();
 }
 
-async function handlePollVote(pollId: string, optionIds: number[]): Promise<void> {
+async function handlePollVote(messageId: number, optionIds: number[]): Promise<void> {
   const els = getEls();
   
   try {
@@ -72,7 +72,7 @@ async function handlePollVote(pollId: string, optionIds: number[]): Promise<void
     showTyping();
 
     // Call the API to vote
-    const response = await votePoll(pollId, optionIds);
+    const response = await votePoll(messageId, optionIds);
 
     // Show the bot's response as a text message
     if (response.text) {
