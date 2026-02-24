@@ -31,6 +31,11 @@ class ServerlessButton:
     text: str
     callback_data: str = ""
 
+    @property
+    def data(self) -> bytes:
+        """Button callback data as bytes, matching Telethon MessageButton.data."""
+        return self.callback_data.encode("utf-8")
+
 
 def _wrap_button_row(row: JsonValue) -> list[ServerlessButton]:
     """Convert a raw JSON row of buttons into ServerlessButton objects."""
