@@ -7,7 +7,6 @@ while T3-T5 tasks fix the divergences.
 
 import inspect
 
-import pytest
 from telethon.tl.custom.message import Message
 
 from tg_auto_test.test_utils.models import ServerlessMessage
@@ -16,7 +15,6 @@ from tg_auto_test.test_utils.models import ServerlessMessage
 class TestMessageExtendedConformance:
     """Test additional message methods that should conform to Telethon Message interface."""
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing delete method")
     def test_message_delete_signature(self) -> None:
         """Test Message.delete() signature matches Telethon."""
         telethon_sig = inspect.signature(Message.delete)
@@ -31,7 +29,6 @@ class TestMessageExtendedConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing edit method")
     def test_message_edit_signature(self) -> None:
         """Test Message.edit() signature matches Telethon."""
         telethon_sig = inspect.signature(Message.edit)
@@ -46,7 +43,6 @@ class TestMessageExtendedConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing reply method")
     def test_message_reply_signature(self) -> None:
         """Test Message.reply() signature matches Telethon."""
         telethon_sig = inspect.signature(Message.reply)
@@ -61,7 +57,6 @@ class TestMessageExtendedConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing forward_to method")
     def test_message_forward_to_signature(self) -> None:
         """Test Message.forward_to() signature matches Telethon."""
         telethon_sig = inspect.signature(Message.forward_to)
@@ -108,7 +103,6 @@ class TestMessageExtendedConformance:
             if hasattr(Message, prop):
                 assert hasattr(ServerlessMessage, prop), f"ServerlessMessage missing property: {prop}"
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing get_reply_message method")
     def test_message_get_reply_message_signature(self) -> None:
         """Test Message.get_reply_message() signature matches Telethon."""
         telethon_sig = inspect.signature(Message.get_reply_message)

@@ -106,3 +106,23 @@ class ServerlessMessage(ServerlessMessageProperties):
         if self._click_callback is None:
             raise RuntimeError("click() requires a client reference (_click_callback).")
         return await self._click_callback(self.id, data.decode())
+
+    async def delete(self, *args: object, **kwargs: object) -> None:
+        """Delete this message, matching Telethon's Message.delete signature."""
+        raise NotImplementedError("delete() is not supported in serverless testing mode")
+
+    async def edit(self, *args: object, **kwargs: object) -> None:
+        """Edit this message, matching Telethon's Message.edit signature."""
+        raise NotImplementedError("edit() is not supported in serverless testing mode")
+
+    async def reply(self, *args: object, **kwargs: object) -> None:
+        """Reply to this message, matching Telethon's Message.reply signature."""
+        raise NotImplementedError("reply() is not supported in serverless testing mode")
+
+    async def forward_to(self, *args: object, **kwargs: object) -> None:
+        """Forward this message, matching Telethon's Message.forward_to signature."""
+        raise NotImplementedError("forward_to() requires multi-chat support and is not supported")
+
+    async def get_reply_message(self) -> None:
+        """Get the message this is replying to, matching Telethon's Message.get_reply_message signature."""
+        raise NotImplementedError("get_reply_message() is not supported in serverless testing mode")
