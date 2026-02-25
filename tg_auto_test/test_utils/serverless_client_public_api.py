@@ -75,7 +75,7 @@ class ServerlessClientPublicAPI(ServerlessClientAuthStubs):
             raise NotImplementedError("Non-default parameters are not supported")
 
         # Check for non-default boolean parameters
-        if parse_mode != () or not link_preview or force_document or clear_draft or not supports_streaming:
+        if parse_mode != () or not link_preview or force_document or clear_draft or supports_streaming:
             raise NotImplementedError("Non-default parameters are not supported")
 
         return await self._process_text_message(message)

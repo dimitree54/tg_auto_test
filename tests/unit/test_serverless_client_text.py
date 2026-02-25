@@ -75,3 +75,20 @@ async def test_multiple_text_messages() -> None:
                 assert msg.id > 0
     finally:
         await client.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_send_message_with_defaults() -> None:
+    """Test that send_message with default parameters works and doesn't raise NotImplementedError."""
+    client = ServerlessTelegramClient(build_application=build_test_application)
+    await client.connect()
+    try:
+        # This should work without raising NotImplementedError
+        # because all parameters are at their default values
+        # Use client._chat_id to access the correct entity (defaults to user_id=9001)
+        result = await client.send_message(client._chat_id, "hello")  # noqa: SLF001
+        assert result.text == "hello"
+        assert isinstance(result.id, int)
+        assert result.id > 0
+    finally:
+        await client.disconnect()
