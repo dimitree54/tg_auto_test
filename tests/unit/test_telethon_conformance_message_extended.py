@@ -76,7 +76,6 @@ class TestMessageExtendedConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing message properties")
     def test_message_additional_properties(self) -> None:
         """Test that additional message properties exist."""
         # Properties that should exist on our message class
