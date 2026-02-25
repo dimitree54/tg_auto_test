@@ -79,7 +79,7 @@ async def test_send_vote_request() -> None:
         await client(vote_request)
 
         # Get the response
-        response = client.pop_response()
+        response = client._pop_response()
         assert response.text == "Alice voted for: Red"
     finally:
         await client.disconnect()
@@ -99,7 +99,7 @@ async def test_send_vote_request_multiple_options() -> None:
         vote_request = SendVoteRequest(peer=InputPeerEmpty(), msg_id=message_id, options=option_bytes)
         await client(vote_request)
 
-        response = client.pop_response()
+        response = client._pop_response()
         assert response.text == "Alice voted for: Red, Blue"
     finally:
         await client.disconnect()

@@ -42,10 +42,6 @@ class MockDemoClient:
         """Private method for testing - matches implementation."""
         return self._response
 
-    def pop_response(self) -> ServerlessMessage:
-        """Public method for testing - part of the protocol."""
-        return self._pop_response()
-
     async def get_input_entity(self, peer: object) -> object:  # noqa: ARG002
         """Mock get_input_entity implementation."""
         from telethon.tl.types import InputPeerUser  # noqa: PLC0415

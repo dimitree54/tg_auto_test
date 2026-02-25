@@ -72,10 +72,6 @@ class ServerlessTelegramClientCore(ServerlessClientPublicAPI):
     def _pop_response(self) -> ServerlessMessage:
         return pop_client_response(self)  # type: ignore
 
-    def pop_response(self) -> ServerlessMessage:
-        """Public API for demo UI protocol compatibility."""
-        return self._pop_response()
-
     async def _process_text_message(self, text: str) -> ServerlessMessage:
         self._outbox.clear()
         payload, msg = self._helpers.base_message_update(self._chat_id)

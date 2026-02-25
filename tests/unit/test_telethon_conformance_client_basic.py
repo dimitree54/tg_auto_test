@@ -138,7 +138,7 @@ class TestTelegramClientConformance:
         }
 
         # Allow our methods that are documented public API
-        allowed_extra_methods = {"pop_response"}  # Demo UI compatibility method
+        allowed_extra_methods: set[str] = set()  # No extra public methods allowed
 
         extra_methods = our_methods - telethon_methods - allowed_extra_methods
         assert not extra_methods, f"Extra public methods found: {extra_methods}"
