@@ -88,3 +88,33 @@ class ServerlessTelegramConversation:
     def mark_read(self, message: object = None) -> None:
         del message
         raise NotImplementedError("mark_read() requires read receipt tracking and is not supported")
+
+    @property
+    def chat(self) -> object:
+        raise NotImplementedError("chat requires entity resolution")
+
+    @property
+    def chat_id(self) -> int | None:
+        raise NotImplementedError("chat_id is not tracked in serverless mode")
+
+    @property
+    def input_chat(self) -> object:
+        raise NotImplementedError("input_chat requires entity resolution")
+
+    @property
+    def is_channel(self) -> bool:
+        raise NotImplementedError("is_channel requires entity resolution")
+
+    @property
+    def is_group(self) -> bool:
+        raise NotImplementedError("is_group requires entity resolution")
+
+    @property
+    def is_private(self) -> bool:
+        raise NotImplementedError("is_private requires entity resolution")
+
+    async def get_chat(self) -> object:
+        raise NotImplementedError("get_chat requires entity resolution")
+
+    async def get_input_chat(self) -> object:
+        raise NotImplementedError("get_input_chat requires entity resolution")

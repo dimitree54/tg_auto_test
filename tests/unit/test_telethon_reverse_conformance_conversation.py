@@ -16,24 +16,23 @@ def _get_public_members(cls: type) -> set[str]:
 
 
 # Members we intentionally skip because they're not applicable to serverless testing
-_CONVERSATION_ALLOWLIST = {
-    "chat",  # Chat entity reference, handled differently in serverless
-    "chat_id",  # Chat ID access, handled differently in serverless
-    "input_chat",  # Input chat entity, handled differently in serverless
-    "get_chat",  # Async chat fetch, not applicable to serverless testing
-    "get_input_chat",  # Async input chat fetch, not applicable to serverless testing
-    "is_channel",  # Chat type check, not applicable to serverless testing
-    "is_group",  # Chat type check, not applicable to serverless testing
-    "is_private",  # Chat type check, not applicable to serverless testing
-}
+_CONVERSATION_ALLOWLIST: set[str] = set()
 
 # Members that already exist on our conversation class (should not be marked xfail)
 _CONVERSATION_IMPLEMENTED_MEMBERS = {
     "cancel",
     "cancel_all",
+    "chat",
+    "chat_id",
+    "get_chat",
     "get_edit",
+    "get_input_chat",
     "get_reply",
     "get_response",
+    "input_chat",
+    "is_channel",
+    "is_group",
+    "is_private",
     "mark_read",
     "send_file",
     "send_message",

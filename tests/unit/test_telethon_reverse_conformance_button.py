@@ -16,15 +16,10 @@ def _get_public_members(cls: type) -> set[str]:
 
 
 # Members we intentionally skip because they're not applicable to serverless testing
-_BUTTON_ALLOWLIST = {
-    "client",  # Reference to TelegramClient instance, handled differently in serverless
-    "click",  # Button click method, handled differently in serverless (via message.click)
-    "inline_query",  # Inline query handling, not applicable to serverless testing
-    "url",  # URL button type, not applicable to current serverless testing scope
-}
+_BUTTON_ALLOWLIST: set[str] = set()
 
 # Members that already exist on our ServerlessButton class (should not be marked xfail)
-_BUTTON_IMPLEMENTED_MEMBERS = {"data", "text"}
+_BUTTON_IMPLEMENTED_MEMBERS = {"click", "client", "data", "inline_query", "text", "url"}
 
 
 class TestMessageButtonReverseConformance:
