@@ -1,9 +1,8 @@
 from collections import deque
 from pathlib import Path
-from typing import Union
 
 from telegram.ext import Application
-from telethon.tl.types import LabeledPrice, User
+from telethon.tl.types import LabeledPrice
 
 from tg_auto_test.test_utils.bot_state_utils import get_client_bot_state
 from tg_auto_test.test_utils.file_processing_utils import (
@@ -20,15 +19,15 @@ from tg_auto_test.test_utils.models import ServerlessMessage, TelegramApiCall
 from tg_auto_test.test_utils.poll_vote_handler import PollTracker, create_callback_query_payload
 from tg_auto_test.test_utils.ptb_types import BuildApplication
 from tg_auto_test.test_utils.serverless_client_helpers import ServerlessClientHelpers
+from tg_auto_test.test_utils.serverless_client_public_api import ServerlessClientPublicAPI
 from tg_auto_test.test_utils.serverless_stars_payment import StarsPaymentHandler
-from tg_auto_test.test_utils.serverless_telegram_conversation import ServerlessTelegramConversation
 from tg_auto_test.test_utils.serverless_update_processor import ServerlessUpdateProcessor
 from tg_auto_test.test_utils.stub_request import StubTelegramRequest
 
 _FAKE_TOKEN = "123:ABC"
 
 
-class ServerlessTelegramClientCore:
+class ServerlessTelegramClientCore(ServerlessClientPublicAPI):
     def __init__(
         self,
         build_application: BuildApplication,
@@ -67,91 +66,8 @@ class ServerlessTelegramClientCore:
     async def disconnect(self) -> None:
         await disconnect_client(self)
 
-    async def get_me(self, input_peer: bool = False) -> User:
-        if input_peer is True:
-            raise NotImplementedError("input_peer=True not supported")
-        return User(id=self._user_id, is_self=True, first_name=self._first_name, bot=False, access_hash=0)
-
-    async def get_dialogs(
-        self,
-        limit: int | None = None,
-        *,
-        offset_date: object = None,
-        offset_id: int = 0,
-        offset_peer: object = None,
-        ignore_pinned: bool = False,
-        ignore_migrated: bool = False,
-        folder: int | None = None,
-        archived: bool = False,
-    ) -> list[object]:
-        del limit, offset_date, offset_id, offset_peer, ignore_pinned, ignore_migrated, folder, archived
-        return []
-
     async def _get_bot_state(self) -> dict[str, list[dict[str, str]] | str]:
         return await get_client_bot_state(self._application, self._chat_id)
-
-    async def get_messages(
-        self,
-        entity: object,
-        limit: int | None = None,
-        *,
-        offset_date: object = None,
-        offset_id: int = 0,
-        max_id: int = 0,
-        min_id: int = 0,
-        add_offset: int = 0,
-        search: str | None = None,
-        filter: object = None,
-        from_user: object = None,
-        wait_time: float | None = None,
-        ids: int | list[int] | None = None,
-        reverse: bool = False,
-        reply_to: int | None = None,
-        scheduled: bool = False,
-    ) -> Union[ServerlessMessage, list[ServerlessMessage], None]:
-        del entity
-        if ids is None and limit is None:
-            raise ValueError("Either 'ids' or 'limit' must be provided")
-        if [
-            limit,
-            offset_date,
-            offset_id,
-            max_id,
-            min_id,
-            add_offset,
-            search,
-            filter,
-            from_user,
-            wait_time,
-            reverse,
-            reply_to,
-            scheduled,
-        ] != [None, None, 0, 0, 0, 0, None, None, None, None, False, None, False]:
-            raise NotImplementedError("Parameter not supported")
-        return (
-            ServerlessMessage(id=ids, _click_callback=self._handle_click)
-            if isinstance(ids, int)
-            else (
-                [ServerlessMessage(id=msg_id, _click_callback=self._handle_click) for msg_id in ids]
-                if ids is not None
-                else None
-            )
-        )
-
-    def conversation(
-        self,
-        entity: object,
-        *,
-        timeout: float = 60.0,
-        total_timeout: float | None = None,
-        max_messages: int = 100,
-        exclusive: bool = True,
-        replies_are_responses: bool = True,
-    ) -> ServerlessTelegramConversation:
-        del entity, timeout
-        if [total_timeout, max_messages, exclusive, replies_are_responses] != [None, 100, True, True]:
-            raise NotImplementedError("Parameter not supported")
-        return ServerlessTelegramConversation(client=self)
 
     def _pop_response(self) -> ServerlessMessage:
         return pop_client_response(self)  # type: ignore
