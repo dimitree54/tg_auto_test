@@ -128,3 +128,46 @@ class TestConversationConformance:
         assert list(telethon_params.keys()) == list(our_params.keys()), (
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
+
+    def test_no_extra_public_methods(self) -> None:
+        """Test that ServerlessTelegramConversation has no extra public methods beyond Conversation."""
+        telethon_methods = {
+            name for name in dir(Conversation) if not name.startswith("_") and callable(getattr(Conversation, name))
+        }
+        our_methods = {
+            name
+            for name in dir(ServerlessTelegramConversation)
+            if not name.startswith("_") and callable(getattr(ServerlessTelegramConversation, name))
+        }
+
+        # Allow our methods that are documented public API
+        allowed_extra_methods: set[str] = set()  # No extra methods allowed for Conversation
+
+        extra_methods = our_methods - telethon_methods - allowed_extra_methods
+        assert not extra_methods, f"Extra public methods found: {extra_methods}"
+
+    def test_no_extra_public_attributes(self) -> None:
+        """Test that ServerlessTelegramConversation has no extra public attributes beyond Conversation."""
+        # Get public attributes from Telethon (excluding properties)
+        telethon_attrs = {
+            name
+            for name in dir(Conversation)
+            if not name.startswith("_")
+            and not callable(getattr(Conversation, name))
+            and not isinstance(getattr(Conversation, name), property)
+        }
+
+        # Get public attributes from our class (excluding properties)
+        our_attrs = {
+            name
+            for name in dir(ServerlessTelegramConversation)
+            if not name.startswith("_")
+            and not callable(getattr(ServerlessTelegramConversation, name))
+            and not isinstance(getattr(ServerlessTelegramConversation, name), property)
+        }
+
+        # Allow attributes that exist in Telethon or are specifically allowed extras
+        allowed_extra_attrs: set[str] = set()  # No extra attributes allowed for Conversation
+
+        extra_attrs = our_attrs - telethon_attrs - allowed_extra_attrs
+        assert not extra_attrs, f"Extra public attributes found: {extra_attrs}"

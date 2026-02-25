@@ -88,6 +88,49 @@ class TestMessageConformance:
         for prop in required_properties:
             assert hasattr(ServerlessMessage, prop), f"Missing property: {prop}"
 
+    def test_no_extra_public_methods(self) -> None:
+        """Test that ServerlessMessage has no extra public methods beyond Telethon Message."""
+        telethon_methods = {
+            name for name in dir(Message) if not name.startswith("_") and callable(getattr(Message, name))
+        }
+        our_methods = {
+            name
+            for name in dir(ServerlessMessage)
+            if not name.startswith("_") and callable(getattr(ServerlessMessage, name))
+        }
+
+        # Allow our methods that are documented public API
+        allowed_extra_methods: set[str] = set()  # No extra methods allowed for Message
+
+        extra_methods = our_methods - telethon_methods - allowed_extra_methods
+        assert not extra_methods, f"Extra public methods found: {extra_methods}"
+
+    def test_no_extra_public_attributes(self) -> None:
+        """Test that ServerlessMessage has no extra public attributes beyond Telethon Message."""
+        # Get public attributes from Telethon (excluding properties)
+        telethon_attrs = {
+            name
+            for name in dir(Message)
+            if not name.startswith("_")
+            and not callable(getattr(Message, name))
+            and not isinstance(getattr(Message, name), property)
+        }
+
+        # Get public attributes from our class (excluding properties)
+        our_attrs = {
+            name
+            for name in dir(ServerlessMessage)
+            if not name.startswith("_")
+            and not callable(getattr(ServerlessMessage, name))
+            and not isinstance(getattr(ServerlessMessage, name), property)
+        }
+
+        # Allow attributes that exist in Telethon or are specifically allowed extras
+        allowed_extra_attrs = {"id", "text"}  # These are properties in Telethon but public attrs in our implementation
+
+        extra_attrs = our_attrs - telethon_attrs - allowed_extra_attrs
+        assert not extra_attrs, f"Extra public attributes found: {extra_attrs}"
+
 
 class TestButtonConformance:
     """Test that ServerlessButton conforms to MessageButton interface."""
@@ -104,3 +147,46 @@ class TestButtonConformance:
         # Our implementation should have data as bytes
         assert hasattr(button, "data")
         assert isinstance(button.data, bytes)
+
+    def test_no_extra_public_methods(self) -> None:
+        """Test that ServerlessButton has no extra public methods beyond MessageButton."""
+        telethon_methods = {
+            name for name in dir(MessageButton) if not name.startswith("_") and callable(getattr(MessageButton, name))
+        }
+        our_methods = {
+            name
+            for name in dir(ServerlessButton)
+            if not name.startswith("_") and callable(getattr(ServerlessButton, name))
+        }
+
+        # Allow our methods that are documented public API
+        allowed_extra_methods: set[str] = set()  # No extra methods allowed for Button
+
+        extra_methods = our_methods - telethon_methods - allowed_extra_methods
+        assert not extra_methods, f"Extra public methods found: {extra_methods}"
+
+    def test_no_extra_public_attributes(self) -> None:
+        """Test that ServerlessButton has no extra public attributes beyond MessageButton."""
+        # Get public attributes from Telethon (excluding properties)
+        telethon_attrs = {
+            name
+            for name in dir(MessageButton)
+            if not name.startswith("_")
+            and not callable(getattr(MessageButton, name))
+            and not isinstance(getattr(MessageButton, name), property)
+        }
+
+        # Get public attributes from our class (excluding properties)
+        our_attrs = {
+            name
+            for name in dir(ServerlessButton)
+            if not name.startswith("_")
+            and not callable(getattr(ServerlessButton, name))
+            and not isinstance(getattr(ServerlessButton, name), property)
+        }
+
+        # Allow attributes that exist in Telethon or are specifically allowed extras
+        allowed_extra_attrs = {"text"}  # This is a property in Telethon but public attr in our implementation
+
+        extra_attrs = our_attrs - telethon_attrs - allowed_extra_attrs
+        assert not extra_attrs, f"Extra public attributes found: {extra_attrs}"
