@@ -66,3 +66,6 @@ handle_file_upload  # File upload helper function
 exc_val  # Context manager protocol parameter
 args  # *args parameter in message methods matching Telethon signature
 kwargs  # **kwargs parameter in message methods matching Telethon signature
+
+# Reverse conformance test class attributes (used in test parametrization)
+IMPLEMENTED_MEMBERS  # Class attribute storing implemented methods for test parametrization
