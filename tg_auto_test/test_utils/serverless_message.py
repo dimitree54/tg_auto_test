@@ -126,3 +126,43 @@ class ServerlessMessage(ServerlessMessageProperties):
     async def get_reply_message(self) -> None:
         """Get the message this is replying to, matching Telethon's Message.get_reply_message signature."""
         raise NotImplementedError("get_reply_message() is not supported in serverless testing mode")
+
+    async def get_buttons(self, *args: object, **kwargs: object) -> None:
+        """Get button matrix access - not supported in serverless testing mode."""
+        raise NotImplementedError("get_buttons() is not supported in serverless testing mode")
+
+    async def get_chat(self, *args: object, **kwargs: object) -> None:
+        """Async chat entity fetch - not supported in serverless testing mode."""
+        raise NotImplementedError("get_chat() is not supported in serverless testing mode")
+
+    async def get_entities_text(self, *args: object, **kwargs: object) -> None:
+        """Entity text extraction - not supported in serverless testing mode."""
+        raise NotImplementedError("get_entities_text() is not supported in serverless testing mode")
+
+    async def get_input_chat(self, *args: object, **kwargs: object) -> None:
+        """Async input chat fetch - not supported in serverless testing mode."""
+        raise NotImplementedError("get_input_chat() is not supported in serverless testing mode")
+
+    async def get_input_sender(self, *args: object, **kwargs: object) -> None:
+        """Async input sender fetch - not supported in serverless testing mode."""
+        raise NotImplementedError("get_input_sender() is not supported in serverless testing mode")
+
+    async def get_sender(self, *args: object, **kwargs: object) -> None:
+        """Async sender fetch - not supported in serverless testing mode."""
+        raise NotImplementedError("get_sender() is not supported in serverless testing mode")
+
+    async def mark_read(self, *args: object, **kwargs: object) -> None:
+        """Mark message as read - not supported in serverless testing mode."""
+        raise NotImplementedError("mark_read() is not supported in serverless testing mode")
+
+    async def pin(self, *args: object, **kwargs: object) -> None:
+        """Pin message method - not supported in serverless testing mode."""
+        raise NotImplementedError("pin() is not supported in serverless testing mode")
+
+    async def respond(self, *args: object, **kwargs: object) -> None:
+        """Message response method - not supported in serverless testing mode."""
+        raise NotImplementedError("respond() is not supported in serverless testing mode")
+
+    async def unpin(self, *args: object, **kwargs: object) -> None:
+        """Unpin message method - not supported in serverless testing mode."""
+        raise NotImplementedError("unpin() is not supported in serverless testing mode")

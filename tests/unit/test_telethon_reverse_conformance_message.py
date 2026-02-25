@@ -16,42 +16,20 @@ def _get_public_members(cls: type) -> set[str]:
 
 
 # Members we intentionally skip because they're protocol-internal or not applicable
-_MESSAGE_ALLOWLIST = {
-    "CONSTRUCTOR_ID",  # TL protocol constant, not needed for testing interface
-    "SUBCLASS_OF_ID",  # TL protocol constant, not needed for testing interface
-    "from_reader",  # TL protocol deserialization, not applicable to serverless testing
-    "serialize_bytes",  # TL protocol serialization, not applicable to serverless testing
-    "serialize_datetime",  # TL protocol serialization helper, not applicable to serverless testing
-    "to_dict",  # TL protocol serialization, not applicable to serverless testing
-    "to_json",  # TL protocol serialization, not applicable to serverless testing
-    "stringify",  # TL protocol debugging, not applicable to serverless testing
-    "pretty_format",  # TL protocol debugging, not applicable to serverless testing
-    "client",  # Reference to TelegramClient instance, handled differently in serverless
-    "input_chat",  # Chat entity resolution, handled differently in serverless
-    "input_sender",  # Sender entity resolution, handled differently in serverless
-    "is_channel",  # Chat type check, handled differently in serverless
-    "is_group",  # Chat type check, handled differently in serverless
-    "is_private",  # Chat type check, handled differently in serverless
-    "get_chat",  # Async chat entity fetch, not applicable to serverless testing
-    "get_input_chat",  # Async input chat fetch, not applicable to serverless testing
-    "get_input_sender",  # Async input sender fetch, not applicable to serverless testing
-    "get_sender",  # Async sender fetch, not applicable to serverless testing
-    "respond",  # Message response method, not applicable to serverless testing
-    "get_entities_text",  # Entity text extraction, complex feature not needed for basic testing
-    "get_buttons",  # Button matrix access, handled differently in serverless
-    "mark_read",  # Mark message as read, not applicable to serverless testing
-    "pin",  # Pin message method, not applicable to serverless testing
-    "unpin",  # Unpin message method, not applicable to serverless testing
-}
+_MESSAGE_ALLOWLIST = set()
 
 # Members that already exist on our ServerlessMessage class (should not be marked xfail)
 _MESSAGE_IMPLEMENTED_MEMBERS = {
+    "CONSTRUCTOR_ID",
+    "SUBCLASS_OF_ID",
+    "action_entities",
     "audio",
     "button_count",
     "buttons",
     "chat",
     "chat_id",
     "click",
+    "client",
     "contact",
     "delete",
     "dice",
@@ -61,21 +39,49 @@ _MESSAGE_IMPLEMENTED_MEMBERS = {
     "file",
     "forward",
     "forward_to",
+    "from_reader",
     "game",
+    "geo",
+    "get_buttons",
+    "get_chat",
+    "get_entities_text",
+    "get_input_chat",
+    "get_input_sender",
     "get_reply_message",
+    "get_sender",
     "gif",
+    "input_chat",
+    "input_sender",
     "invoice",
+    "is_channel",
+    "is_group",
+    "is_private",
+    "is_reply",
+    "mark_read",
     "photo",
+    "pin",
     "poll",
+    "pretty_format",
     "raw_text",
     "reply",
+    "reply_to_chat",
     "reply_to_msg_id",
+    "reply_to_sender",
+    "respond",
     "sender",
     "sender_id",
+    "serialize_bytes",
+    "serialize_datetime",
     "sticker",
+    "stringify",
     "text",
+    "to_dict",
+    "to_id",
+    "to_json",
+    "unpin",
     "venue",
     "via_bot",
+    "via_input_bot",
     "video",
     "video_note",
     "voice",
