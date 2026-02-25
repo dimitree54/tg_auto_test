@@ -18,6 +18,8 @@ conversation
 send_message
 send_file
 get_response
+get_reply
+get_edit
 get_scoped_commands
 get_menu_button
 

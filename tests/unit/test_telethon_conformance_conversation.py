@@ -26,7 +26,6 @@ class TestConversationConformance:
         assert hasattr(Conversation, "send_file")
         assert hasattr(ServerlessTelegramConversation, "send_file")
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: get_response signature")
     def test_conversation_get_response_signature(self) -> None:
         """Test get_response() signature matches Telethon."""
         telethon_sig = inspect.signature(Conversation.get_response)
@@ -39,7 +38,6 @@ class TestConversationConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing get_edit method")
     def test_conversation_get_edit_signature(self) -> None:
         """Test get_edit() signature matches Telethon."""
         telethon_sig = inspect.signature(Conversation.get_edit)
@@ -57,7 +55,6 @@ class TestConversationConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing get_reply method")
     def test_conversation_get_reply_signature(self) -> None:
         """Test get_reply() signature matches Telethon."""
         telethon_sig = inspect.signature(Conversation.get_reply)

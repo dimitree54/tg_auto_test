@@ -38,8 +38,8 @@ class ServerlessTelegramConversation:
     ) -> None:
         del exc_type, exc, exc_tb
 
-    async def send_message(self, text: str) -> None:
-        await self._client._process_text_message(text)  # noqa: SLF001
+    async def send_message(self, text: str) -> ServerlessMessage:
+        return await self._client._process_text_message(text)  # noqa: SLF001
 
     async def send_file(
         self,
@@ -49,8 +49,8 @@ class ServerlessTelegramConversation:
         force_document: bool = False,
         voice_note: bool = False,
         video_note: bool = False,
-    ) -> None:
-        await self._client._process_file_message(  # noqa: SLF001
+    ) -> ServerlessMessage:
+        return await self._client._process_file_message(  # noqa: SLF001
             file,
             caption=caption,
             force_document=force_document,
@@ -58,5 +58,15 @@ class ServerlessTelegramConversation:
             video_note=video_note,
         )
 
-    async def get_response(self) -> ServerlessMessage:
+    async def get_response(self, message: object = None, *, timeout: float | None = None) -> ServerlessMessage:
+        if message is not None:
+            raise NotImplementedError("message parameter not supported in serverless mode")
+        if timeout is not None:
+            raise NotImplementedError("timeout parameter not supported in serverless mode")
         return self._client._pop_response()  # noqa: SLF001
+
+    async def get_reply(self, message: object = None, *, timeout: float | None = None) -> ServerlessMessage:
+        raise NotImplementedError("get_reply() not supported in serverless mode")
+
+    async def get_edit(self, message: object = None, *, timeout: float | None = None) -> ServerlessMessage:
+        raise NotImplementedError("get_edit() not supported in serverless mode")
