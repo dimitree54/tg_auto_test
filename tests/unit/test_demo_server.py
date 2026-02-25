@@ -145,6 +145,7 @@ def test_poll_vote_endpoint() -> None:
             self._response = ServerlessMessage(id=456, text="You voted for: Red")
 
         def _pop_response(self) -> ServerlessMessage:
+            """Private method for testing - not in protocol but used by routes.py."""
             return self._response
 
         async def __call__(self, request: object) -> None:

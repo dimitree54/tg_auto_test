@@ -10,7 +10,6 @@ from fastapi.staticfiles import StaticFiles
 
 from tg_auto_test.demo_ui.server.file_store import FileStore
 from tg_auto_test.demo_ui.server.routes import register_routes
-from tg_auto_test.test_utils.models import ServerlessMessage
 
 # Internal asset paths
 _STATIC_DIR = Path(__file__).parent / "static"
@@ -20,24 +19,32 @@ _TEMPLATES_DIR = Path(__file__).parent / "templates"
 class DemoConversationProtocol(Protocol):
     """Protocol for conversation context manager returned by client.conversation()."""
 
-    async def send_message(self, text: str) -> None:
+    async def send_message(self, text: str) -> object:
         """Send a text message."""
         ...
 
-    async def get_response(self) -> ServerlessMessage:
+    async def get_response(self, message: object = None, *, timeout: float | None = None) -> object:
         """Get the bot's response to the last sent message."""
         ...
 
     async def send_file(
         self,
-        file: Path | bytes,
+        file: object,
         *,
         caption: str = "",
         force_document: bool = False,
         voice_note: bool = False,
         video_note: bool = False,
-    ) -> None:
+    ) -> object:
         """Send a file message."""
+        ...
+
+    async def __aenter__(self) -> "DemoConversationProtocol":
+        """Enter the async context manager."""
+        ...
+
+    async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> object:  # noqa: ARG002
+        """Exit the async context manager."""
         ...
 
 
@@ -52,15 +59,13 @@ class DemoClientProtocol(Protocol):
         """Disconnect the client."""
         ...
 
-    def conversation(self, peer: str, timeout: float) -> DemoConversationProtocol:
+    def conversation(self, entity: object, *, timeout: float = 60.0) -> DemoConversationProtocol:
         """Create a conversation context manager."""
         ...
 
-    def _pop_response(self) -> ServerlessMessage:
-        """Pop the most recent response from the client."""
-        ...
-
-    async def get_messages(self, peer: str, *, ids: int) -> ServerlessMessage | None:
+    async def get_messages(
+        self, entity: object, limit: int | None = None, *, ids: int | list[int] | None = None
+    ) -> object:
         """Get messages by ID for Telethon compatibility."""
         ...
 

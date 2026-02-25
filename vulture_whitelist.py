@@ -44,3 +44,6 @@ handle_callback  # FastAPI route handler
 reset  # FastAPI route handler
 vote_poll  # FastAPI route handler
 handle_file_upload  # File upload helper function
+
+# Protocol method parameters (required for typing but unused in protocol definition)
+exc_val  # Context manager protocol parameter

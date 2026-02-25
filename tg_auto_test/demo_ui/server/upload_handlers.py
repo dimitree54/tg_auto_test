@@ -1,6 +1,7 @@
 """File upload handlers for the demo server."""
 
 from typing import TYPE_CHECKING  # noqa: TID251
+import uuid
 
 from fastapi import UploadFile
 
@@ -45,12 +46,12 @@ async def handle_file_upload(
     elif not force_document and content_type.startswith("image/"):
         response_type = "photo"
 
-    file_id = response._response_file_id or filename  # noqa: SLF001
+    file_id = str(uuid.uuid4())
     stored_filename = await store_response_file(file_id, response, demo_server.file_store, filename, content_type, data)
 
     return MessageResponse(
         type=response_type,
         file_id=file_id,
         filename=stored_filename,
-        message_id=response.id,
+        message_id=getattr(response, "id", 0),
     )
