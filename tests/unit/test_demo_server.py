@@ -2,14 +2,13 @@
 
 import asyncio
 from typing import cast
-from unittest.mock import AsyncMock, Mock  # noqa: TID251
+from unittest.mock import Mock  # noqa: TID251
 
 from fastapi.testclient import TestClient
 import pytest
 
 from tg_auto_test.demo_ui.server.demo_server import DemoClientProtocol, DemoServer, create_demo_app
 from tg_auto_test.demo_ui.server.file_store import FileStore
-from tg_auto_test.test_utils.models import ServerlessMessage
 
 
 class TestFileStore:
@@ -132,37 +131,9 @@ def test_demo_server_without_on_action_callback() -> None:
 
 def test_poll_vote_endpoint() -> None:
     """Test the poll vote endpoint using Telethon SendVoteRequest."""
+    from tests.unit.demo_server_mocks import MockDemoClient  # noqa: PLC0415
 
-    class MockClient:
-        def __init__(self) -> None:
-            self.connect = AsyncMock()
-            self.disconnect = AsyncMock()
-
-            self.conversation = Mock()
-
-            self.get_messages = AsyncMock()
-            self._call_log: list = []
-            self._response = ServerlessMessage(id=456, text="You voted for: Red")
-
-        def _pop_response(self) -> ServerlessMessage:
-            """Private method for testing - matches implementation."""
-            return self._response
-
-        def pop_response(self) -> ServerlessMessage:
-            """Public method for testing - part of the protocol."""
-            return self._pop_response()
-
-        async def get_input_entity(self, peer: object) -> object:  # noqa: ARG002
-            """Mock get_input_entity implementation."""
-            from telethon.tl.types import InputPeerUser  # noqa: PLC0415
-
-            return InputPeerUser(user_id=999_999, access_hash=0)
-
-        async def __call__(self, request: object) -> None:
-            self._call_log.append(request)
-            return None
-
-    mock_client = MockClient()
+    mock_client = MockDemoClient()
 
     # Create demo server and app
     server = DemoServer(cast(DemoClientProtocol, mock_client), "test_bot")

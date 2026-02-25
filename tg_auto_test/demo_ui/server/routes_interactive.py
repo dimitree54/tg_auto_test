@@ -26,8 +26,9 @@ async def handle_pay_invoice(demo_server: "DemoServer", req: InvoicePayRequest) 
         form_id=req.message_id,
         invoice=InputInvoiceMessage(peer=peer, msg_id=req.message_id),
     )
-    await demo_server.client(request)
-    response = demo_server.client.pop_response()
+    async with demo_server.client.conversation(demo_server.peer, timeout=demo_server.timeout) as conv:
+        await demo_server.client(request)
+        response = await conv.get_response()
     return await serialize_message(response, demo_server.file_store)
 
 
@@ -38,11 +39,8 @@ async def handle_callback(demo_server: "DemoServer", req: CallbackRequest) -> Me
         raise HTTPException(status_code=404, detail=f"Message {req.message_id} not found")
 
     click_result = await msg.click(data=req.data.encode())
-    # Handle both ServerlessMessage and BotCallbackAnswer return types
-    if hasattr(click_result, "text") and hasattr(click_result, "id"):
-        response = click_result
-    else:
-        response = demo_server.client.pop_response()
+    # In our implementation, click() always returns ServerlessMessage
+    response = click_result
     return await serialize_message(response, demo_server.file_store)
 
 
@@ -60,11 +58,10 @@ async def handle_poll_vote(demo_server: "DemoServer", request: PollVoteRequest) 
         options=option_bytes,
     )
 
-    # Execute the request
-    await demo_server.client(vote_request)
-
-    # Get the response
-    response = demo_server.client.pop_response()
+    # Execute the request and get response using conversation pattern
+    async with demo_server.client.conversation(demo_server.peer, timeout=demo_server.timeout) as conv:
+        await demo_server.client(vote_request)
+        response = await conv.get_response()
 
     # Serialize the bot response
     return await serialize_message(response, demo_server.file_store)
