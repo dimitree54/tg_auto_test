@@ -1,5 +1,21 @@
 import { escapeHtml } from './escape';
 
+function escapeAndLinkCommands(text: string): string {
+  const commandPattern = /\/([a-zA-Z0-9_]{1,32})(?=\s|$)/g;
+  let result = '';
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  
+  while ((match = commandPattern.exec(text)) !== null) {
+    result += escapeHtml(text.slice(lastIndex, match.index));
+    result += `<span class="tg-command" data-command="${escapeHtml(match[0])}">${escapeHtml(match[0])}</span>`;
+    lastIndex = match.index + match[0].length;
+  }
+  
+  result += escapeHtml(text.slice(lastIndex));
+  return result;
+}
+
 interface MessageEntity {
   type: string;
   offset: number;
@@ -41,7 +57,7 @@ function closeTag(entity: MessageEntity): string {
 }
 
 export function renderEntities(text: string, entities: MessageEntity[]): string {
-  if (entities.length === 0) return escapeHtml(text);
+  if (entities.length === 0) return escapeAndLinkCommands(text);
   
   const sorted = [...entities].sort((a, b) => 
     a.offset !== b.offset ? a.offset - b.offset : b.length - a.length
@@ -55,7 +71,7 @@ export function renderEntities(text: string, entities: MessageEntity[]): string 
     const entityEnd = Math.max(entityOffset, Math.min(entity.offset + entity.length, text.length));
     
     if (entityOffset > pos) {
-      html += escapeHtml(text.slice(pos, entityOffset));
+      html += escapeAndLinkCommands(text.slice(pos, entityOffset));
     }
     
     if (entityEnd > entityOffset) {
@@ -72,7 +88,7 @@ export function renderEntities(text: string, entities: MessageEntity[]): string 
   }
   
   if (pos < text.length) {
-    html += escapeHtml(text.slice(pos));
+    html += escapeAndLinkCommands(text.slice(pos));
   }
   
   return html;

@@ -1,0 +1,62 @@
+/* Telegram entity styles */
+
+/* Spoiler — initially hidden, click to reveal */
+.tg-spoiler {
+  background-color: currentColor;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.tg-spoiler.revealed {
+  background-color: transparent;
+}
+
+/* Inline code */
+.message code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+  font-size: 13px;
+}
+
+/* Code block */
+.message pre {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 8px 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 4px 0;
+}
+
+.message pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* Links in bot messages */
+.message.received a {
+  color: #2678b6;
+  text-decoration: none;
+}
+
+.message.received a:hover {
+  text-decoration: underline;
+}
+
+/* Command links */
+.tg-command {
+  color: #2678b6;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.tg-command:hover {
+  text-decoration: underline;
+}

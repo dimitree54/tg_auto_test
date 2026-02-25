@@ -33,5 +33,20 @@ export function initApp(): void {
     void resetDemoConversation();
   });
 
+  els.messagesEl.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    
+    if (target.classList.contains('tg-command')) {
+      const command = target.dataset.command;
+      if (command) {
+        void sendTextMessage(command, { clearInput: true });
+      }
+    }
+    
+    if (target.classList.contains('tg-spoiler') && !target.classList.contains('revealed')) {
+      target.classList.add('revealed');
+    }
+  });
+
   void autoStart();
 }
