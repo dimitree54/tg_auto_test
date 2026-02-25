@@ -7,7 +7,6 @@ while T3-T5 tasks fix the divergences.
 
 import inspect
 
-import pytest
 from telethon import TelegramClient
 
 from tg_auto_test.test_utils.serverless_telegram_client_core import ServerlessTelegramClientCore
@@ -16,7 +15,6 @@ from tg_auto_test.test_utils.serverless_telegram_client_core import ServerlessTe
 class TestTelegramClientExtendedConformance:
     """Test additional client methods that should conform to TelegramClient interface."""
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing send_message method")
     def test_client_send_message_signature(self) -> None:
         """Test send_message() method signature matches Telethon."""
         telethon_sig = inspect.signature(TelegramClient.send_message)
@@ -33,7 +31,6 @@ class TestTelegramClientExtendedConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing send_file method")
     def test_client_send_file_signature(self) -> None:
         """Test send_file() method signature matches Telethon."""
         telethon_sig = inspect.signature(TelegramClient.send_file)
@@ -50,7 +47,6 @@ class TestTelegramClientExtendedConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing download_media method")
     def test_client_download_media_signature(self) -> None:
         """Test download_media() method signature matches Telethon."""
         telethon_sig = inspect.signature(TelegramClient.download_media)
@@ -67,7 +63,6 @@ class TestTelegramClientExtendedConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing get_entity method")
     def test_client_get_entity_signature(self) -> None:
         """Test get_entity() method signature matches Telethon."""
         telethon_sig = inspect.signature(TelegramClient.get_entity)
