@@ -73,6 +73,14 @@ class DemoClientProtocol(Protocol):
         """Execute Telethon TL request."""
         ...
 
+    def pop_response(self) -> object:
+        """Pop the next bot response from the outbox."""
+        ...
+
+    async def get_input_entity(self, peer: object) -> object:
+        """Resolve peer to InputPeer."""
+        ...
+
 
 class DemoServer:
     """Telethon-targeted demo server for Telegram bot testing UI."""

@@ -18,7 +18,7 @@ class ConversationClient(Protocol):
         video_note: bool = False,
     ) -> ServerlessMessage: ...
 
-    def _pop_response(self) -> ServerlessMessage: ...
+    def pop_response(self) -> ServerlessMessage: ...
 
     async def _process_callback_query(self, message_id: int, data: str) -> ServerlessMessage: ...
 
@@ -63,7 +63,7 @@ class ServerlessTelegramConversation:
             raise NotImplementedError("message parameter not supported in serverless mode")
         if timeout is not None:
             raise NotImplementedError("timeout parameter not supported in serverless mode")
-        return self._client._pop_response()  # noqa: SLF001
+        return self._client.pop_response()
 
     async def get_reply(self, message: object = None, *, timeout: float | None = None) -> ServerlessMessage:
         raise NotImplementedError("get_reply() not supported in serverless mode")

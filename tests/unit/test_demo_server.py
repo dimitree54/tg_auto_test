@@ -145,8 +145,18 @@ def test_poll_vote_endpoint() -> None:
             self._response = ServerlessMessage(id=456, text="You voted for: Red")
 
         def _pop_response(self) -> ServerlessMessage:
-            """Private method for testing - not in protocol but used by routes.py."""
+            """Private method for testing - matches implementation."""
             return self._response
+
+        def pop_response(self) -> ServerlessMessage:
+            """Public method for testing - part of the protocol."""
+            return self._pop_response()
+
+        async def get_input_entity(self, peer: object) -> object:  # noqa: ARG002
+            """Mock get_input_entity implementation."""
+            from telethon.tl.types import InputPeerUser  # noqa: PLC0415
+
+            return InputPeerUser(user_id=999_999, access_hash=0)
 
         async def __call__(self, request: object) -> None:
             self._call_log.append(request)

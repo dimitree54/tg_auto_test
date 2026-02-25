@@ -51,7 +51,7 @@ async def test_successful_stars_payment() -> None:
                 invoice=InputInvoiceMessage(peer=InputPeerEmpty(), msg_id=invoice_msg.id),
             )
             await client(request)
-            payment_confirmation = client._pop_response()  # noqa: SLF001
+            payment_confirmation = client.pop_response()
 
             assert payment_confirmation.text == "Payment received!"
     finally:
@@ -83,7 +83,7 @@ async def test_multiple_invoices() -> None:
                 invoice=InputInvoiceMessage(peer=InputPeerEmpty(), msg_id=invoice1.id),
             )
             await client(request1)
-            payment1 = client._pop_response()  # noqa: SLF001
+            payment1 = client.pop_response()
             assert payment1.text == "Payment received!"
 
             # Pay second invoice
@@ -92,7 +92,7 @@ async def test_multiple_invoices() -> None:
                 invoice=InputInvoiceMessage(peer=InputPeerEmpty(), msg_id=invoice2.id),
             )
             await client(request2)
-            payment2 = client._pop_response()  # noqa: SLF001
+            payment2 = client.pop_response()
             assert payment2.text == "Payment received!"
     finally:
         await client.disconnect()
@@ -151,7 +151,7 @@ async def test_payment_reduces_stars_balance() -> None:
                 invoice=InputInvoiceMessage(peer=InputPeerEmpty(), msg_id=invoice_msg.id),
             )
             await client(request)
-            client._pop_response()  # noqa: SLF001 # Payment confirmation
+            client.pop_response()  # Payment confirmation
 
             # Balance should be reduced
             new_balance = client._stars_balance  # noqa: SLF001
