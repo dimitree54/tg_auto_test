@@ -23,6 +23,7 @@ async def test_serialize_text_message() -> None:
     assert result.message_id == 123
     assert result.file_id == ""
     assert result.filename == ""
+    assert result.entities == []
 
 
 @pytest.mark.asyncio
