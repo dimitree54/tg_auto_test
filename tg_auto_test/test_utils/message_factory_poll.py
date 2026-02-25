@@ -20,5 +20,5 @@ def build_poll_message(call: TelegramApiCall) -> ServerlessMessage:
 
     return ServerlessMessage(
         id=message_id,
-        poll_data=poll_data,
+        _poll_data=poll_data,
     )

@@ -45,7 +45,7 @@ async def handle_file_upload(
     elif not force_document and content_type.startswith("image/"):
         response_type = "photo"
 
-    file_id = response.response_file_id or filename
+    file_id = response._response_file_id or filename  # noqa: SLF001
     stored_filename = await store_response_file(file_id, response, demo_server.file_store, filename, content_type, data)
 
     return MessageResponse(

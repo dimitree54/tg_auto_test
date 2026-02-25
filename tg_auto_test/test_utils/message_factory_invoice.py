@@ -46,4 +46,4 @@ def build_invoice_message(call: TelegramApiCall) -> ServerlessMessage:
         total_amount=total_amount,
         start_param=str(call.parameters.get("start_parameter", "")),
     )
-    return ServerlessMessage(id=message_id_from_result(call), invoice_data=invoice)
+    return ServerlessMessage(id=message_id_from_result(call), _invoice_data=invoice)

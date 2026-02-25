@@ -27,16 +27,19 @@ class StarsPaymentHandler:
             raise RuntimeError("Insufficient Stars balance in serverless client.")
         new_balance = stars_balance - total_amount
 
-        pre_checkout_calls = await client._process_update({  # noqa: SLF001
-            "update_id": helpers.next_update_id_value(),
-            "pre_checkout_query": {
-                "id": f"precheckout_{invoice_message_id}",
-                "from": helpers.user_dict(),
-                "currency": currency,
-                "total_amount": total_amount,
-                "invoice_payload": payload,
+        pre_checkout_calls = await client._update_processor.process_update(
+            client,
+            {  # noqa: SLF001
+                "update_id": helpers.next_update_id_value(),
+                "pre_checkout_query": {
+                    "id": f"precheckout_{invoice_message_id}",
+                    "from": helpers.user_dict(),
+                    "currency": currency,
+                    "total_amount": total_amount,
+                    "invoice_payload": payload,
+                },
             },
-        })
+        )
         answers = [call for call in pre_checkout_calls if call.api_method == "answerPreCheckoutQuery"]
         if not answers or str(answers[-1].parameters.get("ok", "")).lower() != "true":
             err_msg = (

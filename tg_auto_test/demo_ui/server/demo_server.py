@@ -11,7 +11,6 @@ from fastapi.staticfiles import StaticFiles
 from tg_auto_test.demo_ui.server.file_store import FileStore
 from tg_auto_test.demo_ui.server.routes import register_routes
 from tg_auto_test.test_utils.models import ServerlessMessage
-from tg_auto_test.test_utils.telethon_compatible_message import TelethonCompatibleMessage
 
 # Internal asset paths
 _STATIC_DIR = Path(__file__).parent / "static"
@@ -61,7 +60,7 @@ class DemoClientProtocol(Protocol):
         """Pop the most recent response from the client."""
         ...
 
-    async def get_messages(self, peer: str, *, ids: int) -> TelethonCompatibleMessage | None:
+    async def get_messages(self, peer: str, *, ids: int) -> ServerlessMessage | None:
         """Get messages by ID for Telethon compatibility."""
         ...
 

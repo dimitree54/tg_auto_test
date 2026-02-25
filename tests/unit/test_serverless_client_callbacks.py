@@ -5,8 +5,8 @@ from typing import cast
 import pytest
 
 from tests.unit.helpers_ptb_app import build_test_application
+from tg_auto_test.test_utils.models import ServerlessMessage
 from tg_auto_test.test_utils.serverless_telegram_client import ServerlessTelegramClient
-from tg_auto_test.test_utils.telethon_compatible_message import TelethonCompatibleMessage
 
 
 @pytest.mark.asyncio
@@ -72,7 +72,8 @@ async def test_click_via_get_messages() -> None:
 
             # Use Telethon pattern: get message, then click
             message = await client.get_messages("test_bot", ids=msg_with_buttons.id)
-            message = cast(TelethonCompatibleMessage, message)
+            assert message is not None
+            message = cast(ServerlessMessage, message)  # get_messages with single int returns single ServerlessMessage
             response_msg = await message.click(data=b"opt_a")
 
             assert response_msg.text == "You chose: opt_a"
@@ -123,7 +124,7 @@ async def test_button_properties_match_click_data() -> None:
             btn_a, btn_b = row
 
             # Click using the callback_data from button A
-            response = await msg.click(data=btn_a.callback_data.encode())
+            response = await msg.click(data=btn_a.data)
             assert response.text == "You chose: opt_a"
 
             # Get new keyboard message
@@ -131,7 +132,7 @@ async def test_button_properties_match_click_data() -> None:
             msg2 = await conv.get_response()
 
             # Click using the callback_data from button B
-            response2 = await msg2.click(data=btn_b.callback_data.encode())
+            response2 = await msg2.click(data=btn_b.data)
             assert response2.text == "You chose: opt_b"
     finally:
         await client.disconnect()

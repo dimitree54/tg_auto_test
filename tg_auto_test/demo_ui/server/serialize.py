@@ -10,8 +10,8 @@ from tg_auto_test.test_utils.models import ServerlessMessage
 async def serialize_message(message: ServerlessMessage, file_store: FileStore) -> MessageResponse:
     """Convert a ServerlessMessage to MessageResponse for the API."""
     # Handle poll messages (check poll_data to avoid creating Telethon objects)
-    if message.poll_data is not None:
-        poll_data = message.poll_data
+    if message._poll_data is not None:  # noqa: SLF001
+        poll_data = message._poll_data
         # Extract poll_id from the raw poll data
         poll_id = str(poll_data.get("id", "")) if isinstance(poll_data, dict) else ""
 
@@ -64,7 +64,7 @@ async def serialize_message(message: ServerlessMessage, file_store: FileStore) -
 
     # Handle file downloads and storage
     if msg_type != "text":
-        file_id = message.response_file_id or str(uuid.uuid4())
+        file_id = message._response_file_id or str(uuid.uuid4())  # noqa: SLF001
 
         # Try to download media
         media_bytes = await message.download_media(file=bytes)
@@ -94,8 +94,8 @@ async def serialize_message(message: ServerlessMessage, file_store: FileStore) -
 
     # Convert reply markup
     reply_markup = None
-    if message.reply_markup_data:
-        reply_markup = message.reply_markup_data
+    if message._reply_markup_data:  # noqa: SLF001
+        reply_markup = message._reply_markup_data  # noqa: SLF001
 
     return MessageResponse(
         type=msg_type,

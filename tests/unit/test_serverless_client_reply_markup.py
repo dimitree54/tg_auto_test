@@ -17,11 +17,11 @@ async def test_inline_keyboard_markup() -> None:
             msg = await conv.get_response()
 
             assert msg.text == "Choose:"
-            assert msg.reply_markup_data is not None
-            assert "inline_keyboard" in msg.reply_markup_data
+            assert msg._reply_markup_data is not None  # noqa: SLF001
+            assert "inline_keyboard" in msg._reply_markup_data  # noqa: SLF001
 
             # Check that inline_keyboard contains the expected structure
-            inline_keyboard = msg.reply_markup_data["inline_keyboard"]
+            inline_keyboard = msg._reply_markup_data["inline_keyboard"]  # noqa: SLF001
             assert isinstance(inline_keyboard, list)
             assert len(inline_keyboard) == 1  # One row
 
@@ -63,9 +63,9 @@ async def test_buttons_property() -> None:
             # Check individual buttons
             btn_a, btn_b = row
             assert btn_a.text == "Option A"
-            assert btn_a.callback_data == "opt_a"
+            assert btn_a._callback_data == "opt_a"  # noqa: SLF001
             assert btn_b.text == "Option B"
-            assert btn_b.callback_data == "opt_b"
+            assert btn_b._callback_data == "opt_b"  # noqa: SLF001
     finally:
         await client.disconnect()
 
@@ -97,6 +97,6 @@ async def test_no_markup_returns_none() -> None:
 
             assert msg.buttons is None
             assert msg.button_count == 0
-            assert msg.reply_markup_data is None
+            assert msg._reply_markup_data is None  # noqa: SLF001
     finally:
         await client.disconnect()

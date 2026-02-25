@@ -74,10 +74,10 @@ def _build_photo_message(
         sizes=[PhotoSize(type="x", w=width, h=height, size=len(raw_bytes))],
     )
     return ServerlessMessage(
-        media_photo=photo,
+        _media_photo=photo,
         _raw_bytes=raw_bytes,
         _file_store=file_store,
-        response_file_id=file_id,
+        _response_file_id=file_id,
     )
 
 
@@ -91,10 +91,10 @@ def _build_document_message(
     attributes.append(DocumentAttributeFilename(file_name=file_data.filename))
     doc = make_document(file_id, len(raw_bytes), file_data.content_type, attributes)
     return ServerlessMessage(
-        media_document=doc,
+        _media_document=doc,
         _raw_bytes=raw_bytes,
         _file_store=file_store,
-        response_file_id=file_id,
+        _response_file_id=file_id,
     )
 
 
@@ -112,10 +112,10 @@ def _build_voice_message(
     attributes.append(DocumentAttributeAudio(duration=duration, voice=True))
     doc = make_document(file_id, len(raw_bytes), file_data.content_type, attributes)
     return ServerlessMessage(
-        media_document=doc,
+        _media_document=doc,
         _raw_bytes=raw_bytes,
         _file_store=file_store,
-        response_file_id=file_id,
+        _response_file_id=file_id,
     )
 
 
@@ -135,10 +135,10 @@ def _build_video_note_message(
     attributes.append(DocumentAttributeVideo(duration=duration, w=width, h=height, round_message=True))
     doc = make_document(file_id, len(raw_bytes), file_data.content_type, attributes)
     return ServerlessMessage(
-        media_document=doc,
+        _media_document=doc,
         _raw_bytes=raw_bytes,
         _file_store=file_store,
-        response_file_id=file_id,
+        _response_file_id=file_id,
     )
 
 
@@ -162,7 +162,7 @@ def _build_text_message(call: TelegramApiCall, message_id: int) -> ServerlessMes
     return ServerlessMessage(
         id=message_id,
         text=call.parameters.get("text", ""),
-        reply_markup_data=markup,
+        _reply_markup_data=markup,
     )
 
 

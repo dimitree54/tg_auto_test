@@ -37,7 +37,7 @@ async def test_serialize_invoice_message() -> None:
     mock_invoice.currency = "USD"
     mock_invoice.total_amount = 1000
 
-    message = ServerlessMessage(id=456, invoice_data=mock_invoice)
+    message = ServerlessMessage(id=456, _invoice_data=mock_invoice)
 
     result = await serialize_message(message, file_store)
 
@@ -57,7 +57,7 @@ async def test_serialize_message_with_reply_markup() -> None:
     # Use simpler reply markup structure
     reply_markup = cast(ReplyMarkup, {"type": "inline_keyboard"})
 
-    message = ServerlessMessage(id=111, text="Choose option", reply_markup_data=reply_markup)
+    message = ServerlessMessage(id=111, text="Choose option", _reply_markup_data=reply_markup)
 
     result = await serialize_message(message, file_store)
 
@@ -75,7 +75,7 @@ async def test_serialize_document_message() -> None:
     mock_document = Mock()
     mock_document.attributes = []
 
-    message = ServerlessMessage(id=999, media_document=mock_document, response_file_id="doc_456")
+    message = ServerlessMessage(id=999, _media_document=mock_document, _response_file_id="doc_456")
 
     result = await serialize_message(message, file_store)
 
@@ -117,7 +117,7 @@ async def test_serialize_poll_message() -> None:
         ],
     }
 
-    message = ServerlessMessage(id=789, poll_data=poll_data)
+    message = ServerlessMessage(id=789, _poll_data=poll_data)
 
     result = await serialize_message(message, file_store)
 

@@ -43,11 +43,11 @@ def extract_responses(
                 "prices": prices,
                 "total_amount": sum(price.amount for price in prices),
             }
-        elif call.api_method == "sendPoll" and poll_tracker is not None and message.poll_data is not None:
+        elif call.api_method == "sendPoll" and poll_tracker is not None and message._poll_data is not None:  # noqa: SLF001
             # Track poll by message_id for SendVoteRequest handling
-            if isinstance(message.poll_data, dict):
-                poll_id = str(message.poll_data.get("id", ""))
-                options = message.poll_data.get("options", [])
+            if isinstance(message._poll_data, dict):  # noqa: SLF001
+                poll_id = str(message._poll_data.get("id", ""))  # noqa: SLF001
+                options = message._poll_data.get("options", [])
                 if isinstance(options, list):
                     # Convert to proper format for poll tracker
                     options_data = [{"text": str(opt.get("text", ""))} for opt in options if isinstance(opt, dict)]

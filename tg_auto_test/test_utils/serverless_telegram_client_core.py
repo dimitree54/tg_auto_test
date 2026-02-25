@@ -24,7 +24,6 @@ from tg_auto_test.test_utils.serverless_stars_payment import StarsPaymentHandler
 from tg_auto_test.test_utils.serverless_telegram_conversation import ServerlessTelegramConversation
 from tg_auto_test.test_utils.serverless_update_processor import ServerlessUpdateProcessor
 from tg_auto_test.test_utils.stub_request import StubTelegramRequest
-from tg_auto_test.test_utils.telethon_compatible_message import TelethonCompatibleMessage
 
 _FAKE_TOKEN = "123:ABC"
 
@@ -109,7 +108,7 @@ class ServerlessTelegramClientCore:
         reverse: bool = False,
         reply_to: int | None = None,
         scheduled: bool = False,
-    ) -> Union["TelethonCompatibleMessage", list["TelethonCompatibleMessage"], None]:
+    ) -> Union[ServerlessMessage, list[ServerlessMessage], None]:
         del entity
         if ids is None and limit is None:
             raise ValueError("Either 'ids' or 'limit' must be provided")
@@ -130,9 +129,13 @@ class ServerlessTelegramClientCore:
         ] != [None, None, 0, 0, 0, 0, None, None, None, None, False, None, False]:
             raise NotImplementedError("Parameter not supported")
         return (
-            TelethonCompatibleMessage(ids, self)
+            ServerlessMessage(id=ids, _click_callback=self._handle_click)
             if isinstance(ids, int)
-            else ([TelethonCompatibleMessage(msg_id, self) for msg_id in ids] if ids is not None else None)
+            else (
+                [ServerlessMessage(id=msg_id, _click_callback=self._handle_click) for msg_id in ids]
+                if ids is not None
+                else None
+            )
         )
 
     def conversation(
@@ -189,9 +192,6 @@ class ServerlessTelegramClientCore:
 
     async def _process_message_update(self, payload: dict[str, JsonValue]) -> ServerlessMessage:
         return await self._update_processor.process_message_update(self, payload)
-
-    async def _process_update(self, payload: dict[str, JsonValue]) -> list[TelegramApiCall]:
-        return await self._update_processor.process_update(self, payload)
 
     async def _handle_click(self, message_id: int, data: str) -> ServerlessMessage:
         return await handle_click_wrapper(self, message_id, data)  # type: ignore
