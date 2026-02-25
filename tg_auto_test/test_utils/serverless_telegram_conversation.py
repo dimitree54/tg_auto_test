@@ -70,3 +70,21 @@ class ServerlessTelegramConversation:
 
     async def get_edit(self, message: object = None, *, timeout: float | None = None) -> ServerlessMessage:
         raise NotImplementedError("get_edit() not supported in serverless mode")
+
+    def cancel(self) -> None:
+        raise NotImplementedError("cancel() is not supported in serverless testing mode")
+
+    async def cancel_all(self) -> None:
+        raise NotImplementedError("cancel_all() is not supported in serverless testing mode")
+
+    async def wait_event(self, event: object, *, timeout: float | None = None) -> object:
+        del event, timeout
+        raise NotImplementedError("wait_event() requires the event system and is not supported")
+
+    def wait_read(self, message: object = None, *, timeout: float | None = None) -> object:
+        del message, timeout
+        raise NotImplementedError("wait_read() requires read receipt tracking and is not supported")
+
+    def mark_read(self, message: object = None) -> None:
+        del message
+        raise NotImplementedError("mark_read() requires read receipt tracking and is not supported")

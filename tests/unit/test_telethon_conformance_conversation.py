@@ -1,13 +1,10 @@
 """Telethon conversation interface conformance tests.
 
 These tests verify that our ServerlessTelegramConversation matches the real Telethon Conversation interface.
-Known divergences are marked with pytest.mark.xfail(strict=True) so make check passes
-while T3-T5 tasks fix the divergences.
 """
 
 import inspect
 
-import pytest
 from telethon.tl.custom.conversation import Conversation
 
 from tg_auto_test.test_utils.serverless_telegram_conversation import ServerlessTelegramConversation
@@ -72,13 +69,11 @@ class TestConversationConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing cancel method")
     def test_conversation_cancel_method(self) -> None:
         """Test that cancel() method exists."""
         assert hasattr(Conversation, "cancel")
         assert hasattr(ServerlessTelegramConversation, "cancel"), "ServerlessTelegramConversation missing cancel method"
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing cancel_all method")
     def test_conversation_cancel_all_method(self) -> None:
         """Test that cancel_all() method exists."""
         assert hasattr(Conversation, "cancel_all")
@@ -86,7 +81,6 @@ class TestConversationConformance:
             "ServerlessTelegramConversation missing cancel_all method"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing wait_event method")
     def test_conversation_wait_event_signature(self) -> None:
         """Test wait_event() signature matches Telethon."""
         telethon_sig = inspect.signature(Conversation.wait_event)
@@ -103,7 +97,6 @@ class TestConversationConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing wait_read method")
     def test_conversation_wait_read_signature(self) -> None:
         """Test wait_read() signature matches Telethon."""
         telethon_sig = inspect.signature(Conversation.wait_read)
@@ -120,7 +113,6 @@ class TestConversationConformance:
             f"Parameter names mismatch: Telethon {list(telethon_params.keys())} vs Ours {list(our_params.keys())}"
         )
 
-    @pytest.mark.xfail(strict=True, reason="Divergence: missing mark_read method")
     def test_conversation_mark_read_signature(self) -> None:
         """Test mark_read() signature matches Telethon."""
         telethon_sig = inspect.signature(Conversation.mark_read)
