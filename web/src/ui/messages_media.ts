@@ -1,10 +1,12 @@
+import type { MessageEntity } from '../types/api';
 import { escapeHtml } from '../utils/escape';
+import { renderEntities } from '../utils/formatting';
 import { fmtTime, timeStr } from '../utils/time';
 
 import { getEls } from './dom';
 import { BubbleType, createBubble, metaHtml, scrollBottom } from './messages_core';
 
-export function addPhotoMessage(src: string, type: BubbleType, caption?: string): void {
+export function addPhotoMessage(src: string, type: BubbleType, caption?: string, entities?: MessageEntity[]): void {
   const els = getEls();
   const el = createBubble(type);
   const img = document.createElement('img');
@@ -12,14 +14,17 @@ export function addPhotoMessage(src: string, type: BubbleType, caption?: string)
   img.src = src;
   img.alt = 'Photo';
   el.appendChild(img);
-  if (caption) el.innerHTML += `<span class="caption">${escapeHtml(caption)}</span>`;
+  if (caption) {
+    const captionHtml = type === 'received' && entities?.length ? renderEntities(caption, entities) : escapeHtml(caption);
+    el.innerHTML += `<span class="caption">${captionHtml}</span>`;
+  }
   el.innerHTML += metaHtml();
   els.messagesEl.appendChild(el);
   img.addEventListener('load', () => scrollBottom());
   scrollBottom();
 }
 
-export function addAudioMessage(src: string, type: BubbleType, caption?: string): void {
+export function addAudioMessage(src: string, type: BubbleType, caption?: string, entities?: MessageEntity[]): void {
   const els = getEls();
   const el = createBubble(type);
 
@@ -56,7 +61,8 @@ export function addAudioMessage(src: string, type: BubbleType, caption?: string)
   if (caption) {
     const cap = document.createElement('span');
     cap.className = 'caption';
-    cap.textContent = caption;
+    const captionHtml = type === 'received' && entities?.length ? renderEntities(caption, entities) : escapeHtml(caption);
+    cap.innerHTML = captionHtml;
     el.appendChild(cap);
   }
 
@@ -105,7 +111,7 @@ export function addAudioMessage(src: string, type: BubbleType, caption?: string)
   scrollBottom();
 }
 
-export function addVideoNoteMessage(src: string, type: BubbleType, caption?: string): void {
+export function addVideoNoteMessage(src: string, type: BubbleType, caption?: string, entities?: MessageEntity[]): void {
   const els = getEls();
   const el = createBubble(type);
   const video = document.createElement('video');
@@ -114,7 +120,10 @@ export function addVideoNoteMessage(src: string, type: BubbleType, caption?: str
   video.controls = true;
   video.playsInline = true;
   el.appendChild(video);
-  if (caption) el.innerHTML += `<span class="caption">${escapeHtml(caption)}</span>`;
+  if (caption) {
+    const captionHtml = type === 'received' && entities?.length ? renderEntities(caption, entities) : escapeHtml(caption);
+    el.innerHTML += `<span class="caption">${captionHtml}</span>`;
+  }
   el.innerHTML += metaHtml();
   els.messagesEl.appendChild(el);
   scrollBottom();
@@ -125,6 +134,7 @@ export function addDocumentMessage(
   downloadUrl: string | null,
   type: BubbleType,
   caption?: string,
+  entities?: MessageEntity[],
 ): void {
   const els = getEls();
   const el = createBubble(type);
@@ -134,7 +144,10 @@ export function addDocumentMessage(
   a.download = filename || '';
   a.innerHTML = `<span class="doc-icon">&#128196;</span><span class="doc-name">${escapeHtml(filename)}</span>`;
   el.appendChild(a);
-  if (caption) el.innerHTML += `<span class="caption">${escapeHtml(caption)}</span>`;
+  if (caption) {
+    const captionHtml = type === 'received' && entities?.length ? renderEntities(caption, entities) : escapeHtml(caption);
+    el.innerHTML += `<span class="caption">${captionHtml}</span>`;
+  }
   el.innerHTML += metaHtml();
   els.messagesEl.appendChild(el);
   scrollBottom();

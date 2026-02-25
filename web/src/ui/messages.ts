@@ -1,8 +1,9 @@
 import { payInvoice } from '../api/bot';
 import { appState } from '../state/app';
-import type { MessageResponse } from '../types/api';
+import type { MessageResponse, MessageEntity } from '../types/api';
 import { errorMessage } from '../utils/errors';
 import { escapeHtml } from '../utils/escape';
+import { renderEntities } from '../utils/formatting';
 import { timeStr } from '../utils/time';
 
 import { getEls, setInputsDisabled } from './dom';
@@ -18,10 +19,13 @@ import {
 import { addPollMessage } from './poll';
 import { hideTyping, showTyping } from './typing';
 
-export function addTextMessage(text: string, type: BubbleType): void {
+export function addTextMessage(text: string, type: BubbleType, entities?: MessageEntity[]): void {
   const els = getEls();
   const el = createBubble(type);
-  el.innerHTML += `<span class="text">${escapeHtml(text)}</span>${metaHtml()}`;
+  const content = type === 'received' && entities?.length
+    ? renderEntities(text, entities)
+    : escapeHtml(text);
+  el.innerHTML += `<span class="text">${content}</span>${metaHtml()}`;
   els.messagesEl.appendChild(el);
   scrollBottom();
 }
@@ -100,14 +104,15 @@ export function renderBotResponse(data: MessageResponse): void {
   if (data.type === 'text') {
     if (markup && markup.inline_keyboard) {
       const el = createBubble('received');
-      el.innerHTML += `<span class="text">${escapeHtml(data.text || '')}</span>${metaHtml()}`;
+      const content = renderEntities(data.text || '', data.entities ?? []);
+      el.innerHTML += `<span class="text">${content}</span>${metaHtml()}`;
       els.messagesEl.appendChild(el);
       addInlineKeyboard(el, markup.inline_keyboard, data.message_id, renderBotResponse, (text) =>
         addTextMessage(text, 'received'),
       );
       scrollBottom();
     } else {
-      addTextMessage(data.text || '', 'received');
+      addTextMessage(data.text || '', 'received', data.entities);
     }
     if (markup && markup.keyboard) showReplyKeyboard(markup.keyboard);
     return;
@@ -119,22 +124,22 @@ export function renderBotResponse(data: MessageResponse): void {
   }
 
   if (data.type === 'photo') {
-    addPhotoMessage(`/api/file/${data.file_id || ''}`, 'received');
+    addPhotoMessage(`/api/file/${data.file_id || ''}`, 'received', data.text || undefined, data.entities);
     return;
   }
 
   if (data.type === 'voice') {
-    addAudioMessage(`/api/file/${data.file_id || ''}`, 'received');
+    addAudioMessage(`/api/file/${data.file_id || ''}`, 'received', data.text || undefined, data.entities);
     return;
   }
 
   if (data.type === 'video_note') {
-    addVideoNoteMessage(`/api/file/${data.file_id || ''}`, 'received');
+    addVideoNoteMessage(`/api/file/${data.file_id || ''}`, 'received', data.text || undefined, data.entities);
     return;
   }
 
   if (data.type === 'document') {
-    addDocumentMessage(data.filename || '', `/api/file/${data.file_id || ''}`, 'received');
+    addDocumentMessage(data.filename || '', `/api/file/${data.file_id || ''}`, 'received', data.text || undefined, data.entities);
     return;
   }
 

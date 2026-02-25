@@ -20,6 +20,14 @@ export type ReplyMarkup = {
   keyboard?: ReplyKeyboard;
 } & Record<string, unknown>;
 
+export interface MessageEntity {
+  type: string;
+  offset: number;
+  length: number;
+  url?: string;
+  language?: string;
+}
+
 export interface MessageResponse {
   type: MessageType;
   text?: string;
@@ -34,6 +42,7 @@ export interface MessageResponse {
   poll_question?: string;
   poll_options?: Array<{ text: string; voter_count: number }>;
   poll_id?: string;
+  entities?: MessageEntity[];
 }
 
 export interface BotCommandInfo {
