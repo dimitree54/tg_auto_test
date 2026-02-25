@@ -11,6 +11,10 @@ interface DemoEls {
   menuBtn: HTMLButtonElement;
   commandPanelEl: HTMLElement;
   chatContainer: HTMLElement;
+  emptyPlaceholder: HTMLElement;
+  startContainer: HTMLElement;
+  startBtn: HTMLButtonElement;
+  chatInputEl: HTMLElement;
 }
 
 let cachedEls: DemoEls | null = null;
@@ -27,6 +31,9 @@ export function getEls(): DemoEls {
   const chatContainer = document.querySelector('.chat-container');
   if (!chatContainer) throw new Error('Missing element: .chat-container');
 
+  const chatInputEl = document.querySelector('.chat-input');
+  if (!chatInputEl) throw new Error('Missing element: .chat-input');
+
   cachedEls = {
     messagesEl: requireEl<HTMLElement>('messages'),
     inputEl: requireEl<HTMLInputElement>('msgInput'),
@@ -40,6 +47,10 @@ export function getEls(): DemoEls {
     menuBtn: requireEl<HTMLButtonElement>('menuBtn'),
     commandPanelEl: requireEl<HTMLElement>('commandPanel'),
     chatContainer: chatContainer as HTMLElement,
+    emptyPlaceholder: requireEl<HTMLElement>('emptyPlaceholder'),
+    startContainer: requireEl<HTMLElement>('startContainer'),
+    startBtn: requireEl<HTMLButtonElement>('startBtn'),
+    chatInputEl: chatInputEl as HTMLElement,
   };
   return cachedEls;
 }
@@ -48,4 +59,22 @@ export function setInputsDisabled(disabled: boolean): void {
   const els = getEls();
   els.sendBtn.disabled = disabled;
   els.attachBtn.disabled = disabled;
+}
+
+export function resetElsCache(): void {
+  cachedEls = null;
+}
+
+export function showNotJoinedState(): void {
+  const els = getEls();
+  els.emptyPlaceholder.style.display = '';
+  els.startContainer.style.display = '';
+  els.chatInputEl.style.display = 'none';
+}
+
+export function showActiveState(): void {
+  const els = getEls();
+  els.emptyPlaceholder.style.display = 'none';
+  els.startContainer.style.display = 'none';
+  els.chatInputEl.style.display = '';
 }

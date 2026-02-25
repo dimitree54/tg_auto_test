@@ -1,9 +1,9 @@
 import { initCommandsPanel } from '../features/commands/panel';
 import { initFileStaging } from '../features/files/staging';
-import { autoStart } from '../flows/autostart';
+import { handleStart } from '../flows/start';
 import { resetDemoConversation } from '../flows/reset';
 import { handleSend, sendTextMessage } from '../flows/send';
-import { getEls } from '../ui/dom';
+import { getEls, showNotJoinedState } from '../ui/dom';
 import { initReplyKeyboard } from '../ui/keyboards_reply';
 
 export function initApp(): void {
@@ -33,6 +33,10 @@ export function initApp(): void {
     void resetDemoConversation();
   });
 
+  els.startBtn.addEventListener('click', () => {
+    void handleStart();
+  });
+
   els.messagesEl.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
     
@@ -48,5 +52,5 @@ export function initApp(): void {
     }
   });
 
-  void autoStart();
+  showNotJoinedState();
 }
