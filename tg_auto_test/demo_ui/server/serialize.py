@@ -4,6 +4,7 @@ import uuid
 
 from tg_auto_test.demo_ui.server.api_models import MessageResponse
 from tg_auto_test.demo_ui.server.file_store import FileStore
+from tg_auto_test.demo_ui.server.serialize_entities import serialize_entities
 
 
 def _serialize_buttons(buttons: list[list[object]]) -> dict[str, list[list[dict[str, str]]]]:
@@ -58,6 +59,7 @@ async def serialize_message(message: object, file_store: FileStore) -> MessageRe
             poll_question=question,
             poll_options=options,
             poll_id=poll_id,
+            entities=[],
         )
 
     # Handle invoice messages
@@ -70,6 +72,7 @@ async def serialize_message(message: object, file_store: FileStore) -> MessageRe
             description=getattr(invoice, "description", ""),
             currency=getattr(invoice, "currency", ""),
             total_amount=getattr(invoice, "total_amount", 0),
+            entities=[],
         )
 
     # Determine message type based on media (using Telethon-standard properties)
@@ -131,6 +134,12 @@ async def serialize_message(message: object, file_store: FileStore) -> MessageRe
     if buttons:
         reply_markup = _serialize_buttons(buttons)
 
+    # Determine which entities to use based on message type
+    if msg_type == "text":
+        entities = serialize_entities(getattr(message, "entities", None))
+    else:
+        entities = serialize_entities(getattr(message, "caption_entities", None))
+
     return MessageResponse(
         type=msg_type,
         text=getattr(message, "text", ""),
@@ -138,6 +147,7 @@ async def serialize_message(message: object, file_store: FileStore) -> MessageRe
         filename=filename,
         message_id=getattr(message, "id", 0),
         reply_markup=reply_markup,
+        entities=entities,
     )
 
 
