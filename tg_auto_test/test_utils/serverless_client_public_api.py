@@ -1,9 +1,9 @@
 from tg_auto_test.test_utils.models import ServerlessMessage
-from tg_auto_test.test_utils.serverless_client_query_api import ServerlessClientQueryAPI
+from tg_auto_test.test_utils.serverless_client_auth_stubs import ServerlessClientAuthStubs
 from tg_auto_test.test_utils.serverless_telegram_conversation import ServerlessTelegramConversation
 
 
-class ServerlessClientPublicAPI(ServerlessClientQueryAPI):
+class ServerlessClientPublicAPI(ServerlessClientAuthStubs):
     """Mixin providing public API methods for ServerlessTelegramClient.
 
     This class contains the client methods that form the public interface

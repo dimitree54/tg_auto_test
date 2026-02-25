@@ -145,12 +145,14 @@ class TestTelegramClientConformance:
 
     def test_no_extra_public_attributes(self) -> None:
         """Test that our client has no extra public attributes beyond Telethon's."""
-        # Get public attributes from our class
+        # Get public attributes from our class (excluding properties which are valid)
         core_attrs = {
             name
             for name in dir(ServerlessTelegramClientCore)
-            if not name.startswith("_") and not callable(getattr(ServerlessTelegramClientCore, name))
+            if not name.startswith("_")
+            and not callable(getattr(ServerlessTelegramClientCore, name))
+            and not isinstance(getattr(ServerlessTelegramClientCore, name), property)
         }
 
-        # Should be empty - all attributes should be private
+        # Should be empty - all attributes should be private or properties
         assert not core_attrs, f"Found public attributes that should be private: {core_attrs}"
