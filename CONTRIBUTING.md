@@ -63,6 +63,25 @@ uv run python -m build
 - Fail-fast design — no silent fallbacks or defaults
 - No legacy code — remove unused functionality completely
 
+## Design philosophy
+
+This library is a **fake Telethon** — a drop-in replacement for `TelegramClient` that works entirely in-memory without internet, tokens, or Telegram auth. Understanding this is essential for contributing correctly.
+
+**We re-implement, not invent.**
+Our fake classes (`ServerlessTelegramClient`, `ServerlessMessage`, `ServerlessTelegramConversation`, `ServerlessButton`) must mirror real Telethon public interfaces exactly. When adding a new feature, find the corresponding Telethon method and match its signature — do not create custom public methods.
+
+**Conformance tests enforce parity.**
+Forward conformance tests (`tests/unit/test_telethon_conformance_*.py`) verify our fakes have no extra public methods. Reverse conformance tests (`tests/unit/test_telethon_reverse_conformance_*.py`) verify every Telethon public method exists on our fakes. Add conformance test coverage when implementing new methods.
+
+**Unimplemented methods raise `NotImplementedError`.**
+Any Telethon public method we haven't fully implemented must raise `NotImplementedError("description")` — never a silent no-op, never omitted entirely. This is how we maintain interface completeness while being honest about coverage.
+
+**`_`-prefixed internals are the exception.**
+Internal test infrastructure methods (like `_pop_response`, `_api_calls`) are prefixed with `_` and are excluded from conformance checks.
+
+**Single chat scope.**
+The library simulates one private chat between a user and a bot. Do not add multi-chat or multi-user features — this is a deliberate design constraint.
+
 ## Secrets management
 
 **No `.env` files:**

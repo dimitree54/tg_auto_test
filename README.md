@@ -15,22 +15,30 @@ A serverless testing library for python-telegram-bot applications. Runs a real P
 ## What it is NOT
 
 - **Not a Telegram bot framework** — use python-telegram-bot for that
-- **Not a Telethon replacement** — this is specifically for testing PTB bots
+- **Not a Telethon replacement** — it is a fake Telethon, specifically for testing PTB bots
 - **Not for real Telegram network tests** — all communication is simulated in-memory
 
-## Core idea
+## Design philosophy
 
-You provide a `build_application` callback that configures your PTB `Application` with handlers. The library provides a `ServerlessTelegramClient` that mimics Telethon's client interface, bridging outgoing Bot API calls into Telethon TL objects for assertions.
+`tg-auto-test` is a **fake Telethon**. The core idea is to build a drop-in replacement for Telethon's `TelegramClient` that works entirely in-memory — no internet connection, no Telegram account, no API tokens, no authentication.
 
-## Telethon Interface Contract
-
-Our fake classes (`ServerlessTelegramClient`, `ServerlessMessage`, `ServerlessTelegramConversation`) **MUST** match real Telethon 1.42 public interfaces exactly: parameter names, positional/keyword-only markers, defaults, types, and return types.
+Any code that accepts a Telethon client should also accept our `ServerlessTelegramClient` and get the same behavior. This includes the Demo UI bundled with this library: it works identically whether you pass a real `TelegramClient` or our fake one.
 
 **Key principles:**
-- Extra `_`-prefixed methods (like `_pop_response`, `_api_calls`, `_process_text_message`) ARE allowed for internal test infrastructure
-- Any Telethon public method/property we add but don't fully implement MUST raise `NotImplementedError("description")`
-- The Demo UI works with both `ServerlessTelegramClient` and real `TelegramClient` through standard Telethon interfaces
-- Interface compliance is verified through `inspect` module conformance tests
+
+1. **We re-implement, not invent.** Our fake classes (`ServerlessTelegramClient`, `ServerlessMessage`, `ServerlessTelegramConversation`, `ServerlessButton`) mirror real Telethon public interfaces exactly — same method names, parameter names, positional/keyword-only markers, defaults, and types. We do not add custom public methods.
+
+2. **Conformance tests enforce parity.** Forward conformance tests verify our fakes have no extra public methods beyond Telethon. Reverse conformance tests verify every Telethon public method exists on our fakes. Signature conformance tests verify parameter-level match using `inspect.signature()`. See `tests/unit/test_telethon_conformance_*.py` and `tests/unit/test_telethon_reverse_conformance_*.py`.
+
+3. **Unimplemented methods fail loudly.** Any Telethon public method we haven't implemented raises `NotImplementedError` — never a silent no-op, never an `AttributeError`.
+
+4. **`_`-prefixed internals are the exception.** Internal test infrastructure methods (like `_pop_response`, `_api_calls`) are prefixed with `_` and are not part of the Telethon interface contract.
+
+5. **Single chat only.** The library simulates one private chat between a user and a bot. No multi-user, no group chats, no channels. This is a deliberate scope constraint.
+
+## How it works
+
+You provide a `build_application` callback that configures your PTB `Application` with handlers. The library provides a `ServerlessTelegramClient` that implements Telethon's client interface, bridging outgoing Bot API calls into Telethon TL objects for assertions.
 
 ## Quickstart
 
@@ -57,7 +65,7 @@ async with client.conversation("test_bot") as conv:
 await client.disconnect()
 ```
 
-## Public API (v0.1)
+## Public API
 
 ### ServerlessTelegramClient
 
@@ -116,6 +124,7 @@ Data class representing a single Bot API call:
 - `GetStarsStatusRequest` — get Stars balance
 - `GetPaymentFormRequest` — get payment form for Stars invoice
 - `SendStarsFormRequest` — submit Stars payment
+- `SendVoteRequest` — vote in a poll
 
 ## Supported Bot API methods
 
@@ -133,6 +142,9 @@ Payments:
 - `sendInvoice` — send Stars payment requests
 - `answerPreCheckoutQuery` — approve/reject payment
 
+Polls:
+- `sendPoll` — send polls with multiple options
+
 Interactive:
 - `answerCallbackQuery` — respond to inline button presses
 
@@ -147,10 +159,10 @@ Utilities:
 ## Limitations & extension seams
 
 **Current limitations:**
-- PTB-only bridge in v0.1 (architecture allows adding aiogram, raw HTTP adapters)
+- PTB-only bridge (architecture allows adding aiogram, raw HTTP adapters)
 - Unsupported Bot API methods raise `AssertionError` (fail-fast design)
-- No multi-user/multi-chat support yet (single private chat simulation)
-- No message edit tracking, reactions, albums, polls
+- Single private chat only — no multi-user, group chats, or channels
+- No message edit tracking, reactions, or albums
 - No support for `sendVideo`, `sendAudio`, `sendAnimation`, `sendLocation`, `sendSticker`
 
 **Extension points:**
@@ -192,7 +204,7 @@ See `CONTRIBUTING.md` for detailed guidelines.
 
 ## Demo UI
 
-`tg-auto-test` includes a local web UI for interactive testing of Telegram bots. The Demo UI provides a browser-based interface to send messages, files, and interact with inline keyboards.
+`tg-auto-test` includes a local web UI for interactive bot testing. The Demo UI accepts any Telethon-compatible client — both the real `TelegramClient` and our `ServerlessTelegramClient` work through the same standard Telethon interfaces. This is a practical proof that our fake client is a true drop-in replacement.
 
 ### What it is
 
@@ -200,7 +212,8 @@ The Demo UI is a local web server that provides:
 - Browser-based chat interface for testing bots
 - Support for text messages, media files (photos, documents, voice notes, video notes)
 - Inline keyboard interaction (button clicking)
-- Stars payment simulation (serverless mode only)
+- Poll voting
+- Stars payment simulation
 - Bot state inspection (commands, menu buttons)
 
 ### Security
@@ -261,18 +274,13 @@ demo_app = create_demo_app(client=client, peer="@your_bot_username")
 uvicorn.run(demo_app, host="127.0.0.1", port=8000)
 ```
 
-### Feature Matrix
+### Supported features
 
-| Feature | Serverless Mode | Telethon Mode |
-|---------|----------------|---------------|
-| Text messages | ✅ Full support | ✅ Full support |
-| Media files | ✅ All types | ✅ All types |
-| Inline keyboards | ✅ Full support | ⚠️ Limited support |
-| Bot commands/menu | ✅ Full support | ❌ Not available |
-| Stars payments | ✅ Full simulation | ❌ Not supported |
-| Multi-chat | ❌ Single chat only | ❌ Single chat only |
-| Message editing | ❌ Not tracked | ❌ Not tracked |
+- Text messages
+- Media files (photos, documents, voice notes, video notes)
+- Inline keyboards (button clicking and callback handling)
+- Polls (creation and voting)
+- Stars payments (invoice creation and payment simulation)
+- Bot commands and menu button inspection
 
-**Serverless Mode** provides the most complete testing experience with full PTB integration and payment simulation.
-
-**Telethon Mode** is useful for testing against real Telegram accounts but has limited interactive features.
+**Not yet supported:** message edit tracking, multi-chat, albums.

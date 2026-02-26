@@ -30,7 +30,6 @@ Categorized backlog of planned features and improvements for tg-auto-test.
 **Message features:**
 - Reactions — add/remove message reactions
 - Albums — grouped media messages
-- Polls — create and interact with polls
 - Message threading — reply chains
 
 **Advanced media:**
