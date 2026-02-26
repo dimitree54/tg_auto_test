@@ -1,8 +1,7 @@
 import { votePoll } from '../api/bot';
 import type { MessageResponse } from '../types/api';
 import { errorMessage } from '../utils/errors';
-import { escapeHtml } from '../utils/escape';
-import { fmtTime } from '../utils/time';
+import { timeStr } from '../utils/time';
 
 import { getEls, setInputsDisabled } from './dom';
 import { addTextMessage } from './messages';
@@ -10,9 +9,7 @@ import { hideTyping, showTyping } from './typing';
 
 type BubbleType = 'sent' | 'received';
 
-function metaHtml(): string {
-  return `<span class="meta">${fmtTime(new Date())}</span>`;
-}
+
 
 function scrollBottom(): void {
   const els = getEls();
@@ -58,14 +55,13 @@ export function addPollMessage(data: MessageResponse, type: BubbleType): void {
 
   const meta = document.createElement('span');
   meta.className = 'meta';
-  meta.textContent = fmtTime(new Date());
+  meta.textContent = timeStr();
   el.appendChild(meta);
   els.messagesEl.appendChild(el);
   scrollBottom();
 }
 
 async function handlePollVote(messageId: number, optionIds: number[]): Promise<void> {
-  const els = getEls();
   
   try {
     setInputsDisabled(true);
