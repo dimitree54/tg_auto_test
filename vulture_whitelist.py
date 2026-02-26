@@ -164,3 +164,17 @@ kwargs  # **kwargs parameter in message methods matching Telethon signature
 
 # Reverse conformance test class attributes (used in test parametrization)
 IMPLEMENTED_MEMBERS  # Class attribute storing implemented methods for test parametrization
+
+# Puppet recorder - experimental demo server with recording
+create_puppet_recorder_app  # Factory function for puppet recorder apps
+start_recording  # FastAPI route handler
+stop_recording  # FastAPI route handler
+clear_recording  # FastAPI route handler
+recording_status  # FastAPI route handler
+recording_steps  # FastAPI route handler
+export_test_code  # FastAPI route handler
+generate_test_code  # Public API function for code generation
+PuppetRecorderServer  # Public class for puppet recorder server
+is_recording  # RecordingSession property
+step_count  # RecordingSession property
+recorder_server  # FastAPI app.state attribute

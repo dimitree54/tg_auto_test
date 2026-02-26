@@ -1,5 +1,22 @@
 """In-memory file storage for the demo server."""
 
+from fastapi import HTTPException
+from fastapi.responses import Response
+
+
+def build_file_response(file_store: "FileStore", file_id: str, *, download: bool = False) -> Response:
+    """Build an HTTP Response for a stored file. Raises 404 if not found."""
+    file_data = file_store.get(file_id)
+    if file_data is None:
+        raise HTTPException(status_code=404, detail="File not found")
+    filename, content_type, data = file_data
+    disposition = "attachment" if download else "inline"
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Content-Disposition": f'{disposition}; filename="{filename}"'},
+    )
+
 
 class FileStore:
     """In-memory storage for uploaded and response files."""
