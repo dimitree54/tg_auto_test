@@ -4,8 +4,8 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 
 from tg_auto_test.demo_ui.puppet_recorder.recorder_models import RecordingSession
 from tg_auto_test.demo_ui.puppet_recorder.recorder_routes import register_recorder_routes
@@ -46,12 +46,12 @@ class PuppetRecorderServer:
         app = FastAPI(lifespan=self.lifespan)
         app.state.recorder_server = self
 
-        @app.get("/", response_model=None)
-        async def index() -> HTMLResponse | FileResponse:
+        @app.get("/")
+        async def index() -> FileResponse:
             template_path = _TEMPLATES_DIR / "puppet_recorder.html"
             if template_path.exists():
                 return FileResponse(template_path)
-            return HTMLResponse("<h1>Puppet Recorder</h1><p>Template not found.</p>", status_code=404)
+            raise HTTPException(status_code=404, detail="Template not found")
 
         register_recorder_routes(app, self)
         return app
