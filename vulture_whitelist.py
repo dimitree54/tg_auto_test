@@ -149,6 +149,14 @@ reset  # FastAPI route handler
 vote_poll  # FastAPI route handler
 handle_file_upload  # File upload helper function
 
+# Type alias used inside string annotation for JsonValue
+JsonPrimitive  # Referenced in JsonValue type alias string
+
+# Mock attributes in tests (vulture false positives)
+__aenter__  # Async context manager mock setup
+__aexit__  # Async context manager mock setup
+return_value  # unittest.mock return value setup
+
 # Protocol method parameters (required for typing but unused in protocol definition)
 exc_val  # Context manager protocol parameter
 args  # *args parameter in message methods matching Telethon signature
