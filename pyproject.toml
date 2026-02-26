@@ -43,3 +43,6 @@ exclude = ["tests*"]
     "static/ui/*",
     "templates/*",
 ]
+"tg_auto_test.demo_ui.puppet_recorder" = [
+    "templates/*",
+]

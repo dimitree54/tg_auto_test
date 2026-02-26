@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Puppet Recorder (Experimental)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5ddd5; height: 100vh; display: flex; }
+
+        .main-panel { flex: 1; display: flex; flex-direction: column; max-width: 600px; min-width: 350px; }
+
+        .chat-header { background: #075e54; color: white; padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+        .chat-header h2 { font-size: 16px; font-weight: 500; flex: 1; }
+        .chat-header .tag { background: #128c7e; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+
+        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+        .message { max-width: 80%; padding: 6px 10px; border-radius: 8px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
+        .message.sent { align-self: flex-end; background: #dcf8c6; }
+        .message.received { align-self: flex-start; background: white; }
+        .message .sender { font-size: 11px; color: #075e54; font-weight: 600; margin-bottom: 2px; }
+        .message .meta { font-size: 10px; color: #999; float: right; margin-left: 8px; margin-top: 4px; }
+
+        .inline-keyboard { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+        .ik-row { display: flex; gap: 4px; }
+        .ik-btn { flex: 1; padding: 6px 8px; border: 1px solid #128c7e; border-radius: 4px; background: transparent; color: #128c7e; cursor: pointer; font-size: 13px; }
+        .ik-btn:hover { background: #e8f5e9; }
+        .ik-btn:disabled { opacity: 0.5; cursor: default; }
+
+        .chat-input { display: flex; gap: 8px; padding: 8px 10px; background: #f0f0f0; }
+        .chat-input input { flex: 1; padding: 8px 12px; border: 1px solid #ccc; border-radius: 20px; font-size: 14px; outline: none; }
+        .chat-input button { padding: 8px 16px; background: #128c7e; color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 14px; }
+        .chat-input button:disabled { opacity: 0.5; cursor: default; }
+
+        .recorder-panel { width: 360px; background: #1e1e2e; color: #cdd6f4; display: flex; flex-direction: column; border-left: 1px solid #313244; }
+        .recorder-header { padding: 10px 16px; background: #181825; display: flex; align-items: center; gap: 10px; }
+        .recorder-header h3 { font-size: 14px; flex: 1; color: #cdd6f4; }
+
+        .rec-controls { display: flex; gap: 6px; padding: 8px 16px; background: #181825; border-bottom: 1px solid #313244; }
+        .rec-btn { padding: 5px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; }
+        .rec-btn.record { background: #f38ba8; color: #1e1e2e; }
+        .rec-btn.record.active { background: #a6e3a1; color: #1e1e2e; }
+        .rec-btn.stop { background: #fab387; color: #1e1e2e; }
+        .rec-btn.clear { background: #6c7086; color: #cdd6f4; }
+        .rec-btn.export { background: #89b4fa; color: #1e1e2e; }
+        .rec-btn:disabled { opacity: 0.5; cursor: default; }
+
+        .rec-status { padding: 6px 16px; font-size: 12px; color: #a6adc8; border-bottom: 1px solid #313244; }
+        .rec-status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .rec-status .dot.on { background: #a6e3a1; }
+        .rec-status .dot.off { background: #6c7086; }
+
+        .rec-steps { flex: 1; overflow-y: auto; padding: 8px; font-family: 'Fira Code', 'Consolas', monospace; font-size: 12px; }
+        .rec-step { padding: 6px 8px; margin-bottom: 4px; border-radius: 4px; background: #313244; }
+        .rec-step .action { color: #89b4fa; font-weight: 600; }
+        .rec-step .input { color: #a6e3a1; }
+        .rec-step .response { color: #f9e2af; }
+        .rec-step .arrow { color: #6c7086; }
+
+        .rec-code { flex: 1; overflow-y: auto; padding: 8px; display: none; }
+        .rec-code pre { font-family: 'Fira Code', 'Consolas', monospace; font-size: 11px; color: #cdd6f4; white-space: pre-wrap; word-wrap: break-word; line-height: 1.5; }
+
+        .rec-tabs { display: flex; border-bottom: 1px solid #313244; }
+        .rec-tab { flex: 1; padding: 6px; text-align: center; font-size: 12px; cursor: pointer; background: #181825; border: none; color: #a6adc8; }
+        .rec-tab.active { background: #313244; color: #cdd6f4; }
+    </style>
+</head>
+<body>
+
+<div class="main-panel">
+    <div class="chat-header">
+        <h2>Puppet Recorder</h2>
+        <span class="tag">EXPERIMENTAL</span>
+    </div>
+    <div class="chat-messages" id="messages"></div>
+    <div class="chat-input">
+        <input autocomplete="off" id="msgInput" placeholder="Type a message..." type="text">
+        <button id="sendBtn">Send</button>
+    </div>
+</div>
+
+<div class="recorder-panel">
+    <div class="recorder-header">
+        <h3>Recording</h3>
+    </div>
+    <div class="rec-controls">
+        <button class="rec-btn record" id="recStartBtn">Record</button>
+        <button class="rec-btn stop" id="recStopBtn" disabled>Stop</button>
+        <button class="rec-btn clear" id="recClearBtn">Clear</button>
+        <button class="rec-btn export" id="recExportBtn">Export</button>
+    </div>
+    <div class="rec-status" id="recStatus">
+        <span class="dot off" id="recDot"></span> Not recording &mdash; <span id="recCount">0</span> steps
+    </div>
+    <div class="rec-tabs">
+        <button class="rec-tab active" id="tabSteps">Steps</button>
+        <button class="rec-tab" id="tabCode">Code</button>
+    </div>
+    <div class="rec-steps" id="recSteps"></div>
+    <div class="rec-code" id="recCode"><pre id="recCodePre"></pre></div>
+</div>
+
+<script>
+(function() {
+    const msgInput = document.getElementById('msgInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const messagesEl = document.getElementById('messages');
+    const recStartBtn = document.getElementById('recStartBtn');
+    const recStopBtn = document.getElementById('recStopBtn');
+    const recClearBtn = document.getElementById('recClearBtn');
+    const recExportBtn = document.getElementById('recExportBtn');
+    const recStatus = document.getElementById('recStatus');
+    const recDot = document.getElementById('recDot');
+    const recCount = document.getElementById('recCount');
+    const recStepsEl = document.getElementById('recSteps');
+    const recCodeEl = document.getElementById('recCode');
+    const recCodePre = document.getElementById('recCodePre');
+    const tabSteps = document.getElementById('tabSteps');
+    const tabCode = document.getElementById('tabCode');
+
+    let sending = false;
+
+    function timeStr() {
+        const d = new Date();
+        return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+    }
+
+    function escapeHtml(str) {
+        const d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    function addMessage(text, type, extra) {
+        const el = document.createElement('div');
+        el.className = 'message ' + type;
+        let html = '';
+        if (type === 'received') html += '<div class="sender">Bot</div>';
+        html += '<span class="text">' + escapeHtml(text) + '</span>';
+        html += '<span class="meta">' + timeStr() + '</span>';
+        el.innerHTML = html;
+        if (extra) el.appendChild(extra);
+        messagesEl.appendChild(el);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return el;
+    }
+
+    function buildInlineKeyboard(rows, messageId) {
+        const container = document.createElement('div');
+        container.className = 'inline-keyboard';
+        rows.forEach(function(row) {
+            const rowEl = document.createElement('div');
+            rowEl.className = 'ik-row';
+            row.forEach(function(btnData) {
+                const btn = document.createElement('button');
+                btn.className = 'ik-btn';
+                btn.textContent = btnData.text || '?';
+                btn.addEventListener('click', function() {
+                    handleCallback(messageId, btnData.callback_data || '');
+                });
+                rowEl.appendChild(btn);
+            });
+            container.appendChild(rowEl);
+        });
+        return container;
+    }
+
+    async function postJson(path, body) {
+        const res = await fetch(path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error(path + ' failed: ' + res.status);
+        return await res.json();
+    }
+
+    async function getJson(path) {
+        const res = await fetch(path);
+        if (!res.ok) throw new Error(path + ' failed: ' + res.status);
+        return await res.json();
+    }
+
+    function renderBotResponse(data) {
+        if (data.type === 'text') {
+            const el = addMessage(data.text || '', 'received');
+            if (data.reply_markup && data.reply_markup.inline_keyboard) {
+                el.appendChild(buildInlineKeyboard(data.reply_markup.inline_keyboard, data.message_id));
+            }
+        } else if (data.type === 'invoice') {
+            addMessage('[Invoice: ' + (data.title || 'Invoice') + ' - ' + (data.total_amount || 0) + ' ' + (data.currency || '') + ']', 'received');
+        } else if (data.type === 'poll') {
+            addMessage('[Poll: ' + (data.poll_question || 'Poll') + ']', 'received');
+        } else {
+            addMessage('[' + data.type + ' response]', 'received');
+        }
+    }
+
+    async function handleSend() {
+        const text = msgInput.value.trim();
+        if (!text || sending) return;
+        sending = true;
+        sendBtn.disabled = true;
+        msgInput.value = '';
+        addMessage(text, 'sent');
+        try {
+            const data = await postJson('/api/message', { text: text });
+            renderBotResponse(data);
+            await refreshRecording();
+        } catch (err) {
+            addMessage('[Error: ' + err.message + ']', 'received');
+        }
+        sending = false;
+        sendBtn.disabled = false;
+        msgInput.focus();
+    }
+
+    async function handleCallback(messageId, callbackData) {
+        if (sending) return;
+        sending = true;
+        try {
+            const data = await postJson('/api/callback', { message_id: messageId, data: callbackData });
+            renderBotResponse(data);
+            await refreshRecording();
+        } catch (err) {
+            addMessage('[Callback error: ' + err.message + ']', 'received');
+        }
+        sending = false;
+    }
+
+    sendBtn.addEventListener('click', handleSend);
+    msgInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') handleSend(); });
+
+    // Recording controls
+    recStartBtn.addEventListener('click', async function() {
+        await postJson('/api/recording/start', {});
+        updateRecordingUI(true);
+        await refreshRecording();
+    });
+
+    recStopBtn.addEventListener('click', async function() {
+        await postJson('/api/recording/stop', {});
+        updateRecordingUI(false);
+    });
+
+    recClearBtn.addEventListener('click', async function() {
+        await postJson('/api/recording/clear', {});
+        updateRecordingUI(false);
+        recStepsEl.innerHTML = '';
+        recCodePre.textContent = '';
+        recCount.textContent = '0';
+    });
+
+    recExportBtn.addEventListener('click', async function() {
+        try {
+            const res = await fetch('/api/recording/export');
+            const code = await res.text();
+            const blob = new Blob([code], { type: 'text/x-python' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'test_recorded_session.py';
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            alert('Export failed: ' + err.message);
+        }
+    });
+
+    function updateRecordingUI(recording) {
+        if (recording) {
+            recDot.className = 'dot on';
+            recStatus.innerHTML = '<span class="dot on" id="recDot"></span> Recording &mdash; <span id="recCount">' + (recCount.textContent || '0') + '</span> steps';
+            recStartBtn.textContent = 'Recording...';
+            recStartBtn.classList.add('active');
+            recStartBtn.disabled = true;
+            recStopBtn.disabled = false;
+        } else {
+            recDot.className = 'dot off';
+            recStartBtn.textContent = 'Record';
+            recStartBtn.classList.remove('active');
+            recStartBtn.disabled = false;
+            recStopBtn.disabled = true;
+        }
+    }
+
+    async function refreshRecording() {
+        try {
+            const status = await getJson('/api/recording/status');
+            const countEl = document.getElementById('recCount') || recCount;
+            countEl.textContent = String(status.step_count);
+
+            const steps = await getJson('/api/recording/steps');
+            recStepsEl.innerHTML = '';
+            steps.forEach(function(step, i) {
+                const el = document.createElement('div');
+                el.className = 'rec-step';
+                let html = '<span class="action">' + escapeHtml(step.action) + '</span>';
+                if (step.text) html += ' <span class="input">"' + escapeHtml(step.text) + '"</span>';
+                if (step.file_type) html += ' <span class="input">[' + escapeHtml(step.file_type) + ']</span>';
+                if (step.callback_data) html += ' <span class="input">cb:' + escapeHtml(step.callback_data) + '</span>';
+                html += ' <span class="arrow">&rarr;</span> ';
+                html += '<span class="response">' + escapeHtml(step.response_type) + '</span>';
+                if (step.response_text) html += ': <span class="response">"' + escapeHtml(step.response_text) + '"</span>';
+                el.innerHTML = html;
+                recStepsEl.appendChild(el);
+            });
+            recStepsEl.scrollTop = recStepsEl.scrollHeight;
+
+            // Refresh code preview
+            const codeRes = await fetch('/api/recording/export');
+            recCodePre.textContent = await codeRes.text();
+        } catch (err) {
+            // Ignore refresh errors
+        }
+    }
+
+    // Tab switching
+    tabSteps.addEventListener('click', function() {
+        tabSteps.classList.add('active');
+        tabCode.classList.remove('active');
+        recStepsEl.style.display = '';
+        recCodeEl.style.display = 'none';
+    });
+    tabCode.addEventListener('click', function() {
+        tabCode.classList.add('active');
+        tabSteps.classList.remove('active');
+        recStepsEl.style.display = 'none';
+        recCodeEl.style.display = '';
+    });
+
+    // Initial state
+    refreshRecording();
+})();
+</script>
+</body>
+</html>

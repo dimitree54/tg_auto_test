@@ -20,6 +20,7 @@ from tg_auto_test.demo_ui.server.api_models import (
     PollVoteRequest,
     TextMessageRequest,
 )
+from tg_auto_test.demo_ui.server.file_store import build_file_response
 from tg_auto_test.demo_ui.server.routes_interactive import (
     handle_callback as handle_callback_interactive,
     handle_pay_invoice,
@@ -43,17 +44,7 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
 
     @app.get("/api/file/{file_id}")
     async def serve_file(file_id: str, download: int = 0) -> Response:
-        file_data = demo_server.file_store.get(file_id)
-        if file_data is None:
-            raise HTTPException(status_code=404, detail="File not found")
-
-        filename, content_type, data = file_data
-        disposition = "attachment" if download else "inline"
-        return Response(
-            content=data,
-            media_type=content_type,
-            headers={"Content-Disposition": f'{disposition}; filename="{filename}"'},
-        )
+        return build_file_response(demo_server.file_store, file_id, download=bool(download))
 
     @app.get("/api/state")
     async def get_state() -> BotStateResponse:
