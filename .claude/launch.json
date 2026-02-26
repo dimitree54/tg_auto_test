@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Demo UI",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "uv run uvicorn demo_ui:app --app-dir scripts --host 127.0.0.1 --port $PORT --reload"
+      ],
+      "autoPort": true,
+      "port": 8080
+    }
+  ]
+}
