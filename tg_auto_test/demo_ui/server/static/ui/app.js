@@ -98,7 +98,7 @@ function ee() {
 }
 function Le() {
   const e = r();
-  e.emptyPlaceholder.style.display = "none", e.startContainer.style.display = "none", e.chatInputEl.style.display = "";
+  e.emptyPlaceholder.style.display = "none", e.startContainer.style.display = "none", e.chatInputEl.style.display = "flex";
 }
 const $ = {
   botCommands: [],

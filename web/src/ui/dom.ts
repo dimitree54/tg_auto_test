@@ -76,5 +76,5 @@ export function showActiveState(): void {
   const els = getEls();
   els.emptyPlaceholder.style.display = 'none';
   els.startContainer.style.display = 'none';
-  els.chatInputEl.style.display = '';
+  els.chatInputEl.style.display = 'flex';
 }

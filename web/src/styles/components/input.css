@@ -1,6 +1,6 @@
 /* Input area */
 .chat-input {
-  display: flex;
+  display: none;
   padding: 8px;
   gap: 6px;
   background: var(--input-bg);
