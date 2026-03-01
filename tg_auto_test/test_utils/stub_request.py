@@ -49,7 +49,8 @@ class StubTelegramRequest(CommandMenuMixin, MediaMixin, BaseRequest):
             "sendAudio": self._handle_send_media,
             "sendSticker": self._handle_send_media,
             "sendInvoice": self._handle_send_invoice,
-            "answerPreCheckoutQuery": self._handle_answer_pre_checkout_query,
+            "answerPreCheckoutQuery": self._handle_ack,
+            "sendChatAction": self._handle_ack,
             "setMyCommands": self._handle_set_my_commands,
             "getMyCommands": self._handle_get_my_commands,
             "deleteMyCommands": self._handle_delete_my_commands,
@@ -154,7 +155,7 @@ class StubTelegramRequest(CommandMenuMixin, MediaMixin, BaseRequest):
                 msg["reply_markup"] = markup
         return self._ok_response(msg)
 
-    def _handle_answer_pre_checkout_query(self, _parameters: dict[str, str]) -> tuple[int, bytes]:
+    def _handle_ack(self, _parameters: dict[str, str]) -> tuple[int, bytes]:
         return self._ok_response(True)
 
     def _base_message(self, parameters: dict[str, str]) -> dict[str, JsonValue]:
