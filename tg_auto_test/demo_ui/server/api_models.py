@@ -46,3 +46,4 @@ class MessageResponse(BaseModel):
     poll_options: list[dict[str, int | str]] = []
     poll_id: str = ""
     entities: list[dict[str, str | int]] = []
+    is_edit: bool = False

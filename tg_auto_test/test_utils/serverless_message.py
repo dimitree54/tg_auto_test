@@ -37,6 +37,7 @@ class ServerlessMessage(ServerlessMessageProperties):
     _file_cache: TelethonFile | None = field(default=None, repr=False)
     _sender_id: int | None = None
     _chat_id_value: int | None = None
+    _is_edit: bool = False
 
     async def download_media(
         self, file: object = None, *, thumb: object = None, progress_callback: object = None

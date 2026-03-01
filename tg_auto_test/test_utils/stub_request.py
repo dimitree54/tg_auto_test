@@ -168,6 +168,16 @@ class StubTelegramRequest(CommandMenuMixin, MediaMixin, BaseRequest):
             "from": self._bot_user(),
         }
 
+    def _edit_message(self, parameters: dict[str, str]) -> dict[str, JsonValue]:
+        message_id = int(parameters["message_id"])
+        chat_id = int(parameters["chat_id"])
+        return {
+            "message_id": message_id,
+            "date": 0,
+            "chat": {"id": chat_id, "type": "private"},
+            "from": self._bot_user(),
+        }
+
     def _bot_user(self) -> dict[str, JsonValue]:
         return {"id": 999_999, "is_bot": True, "first_name": self._bot_first_name, "username": self._bot_username}
 

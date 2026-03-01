@@ -43,6 +43,7 @@ export interface MessageResponse {
   poll_options?: Array<{ text: string; voter_count: number }>;
   poll_id?: string;
   entities?: MessageEntity[];
+  is_edit?: boolean;
 }
 
 export interface BotCommandInfo {

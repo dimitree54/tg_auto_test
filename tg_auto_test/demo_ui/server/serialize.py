@@ -24,6 +24,8 @@ def _serialize_buttons(buttons: list[list[object]]) -> dict[str, list[list[dict[
 
 async def serialize_message(message: object, file_store: FileStore) -> MessageResponse:
     """Convert a message to MessageResponse for the API."""
+    is_edit = getattr(message, "_is_edit", False) is True
+
     # Handle poll messages via Telethon-standard .poll property
     poll = getattr(message, "poll", None)
     if poll is not None:
@@ -60,6 +62,7 @@ async def serialize_message(message: object, file_store: FileStore) -> MessageRe
             poll_options=options,
             poll_id=poll_id,
             entities=[],
+            is_edit=is_edit,
         )
 
     # Handle invoice messages
@@ -73,6 +76,7 @@ async def serialize_message(message: object, file_store: FileStore) -> MessageRe
             currency=getattr(invoice, "currency", ""),
             total_amount=getattr(invoice, "total_amount", 0),
             entities=[],
+            is_edit=is_edit,
         )
 
     # Determine message type based on media (using Telethon-standard properties)
@@ -148,6 +152,7 @@ async def serialize_message(message: object, file_store: FileStore) -> MessageRe
         message_id=getattr(message, "id", 0),
         reply_markup=reply_markup,
         entities=entities,
+        is_edit=is_edit,
     )
 
 

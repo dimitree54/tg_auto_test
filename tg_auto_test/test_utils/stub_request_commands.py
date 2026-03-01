@@ -22,6 +22,8 @@ class _CommandMenuHost(Protocol):
 
     def _base_message(self, parameters: dict[str, str]) -> dict[str, JsonValue]: ...
 
+    def _edit_message(self, parameters: dict[str, str]) -> dict[str, JsonValue]: ...
+
     def _ok_response(self, result: JsonValue) -> tuple[int, bytes]: ...
 
 
@@ -57,7 +59,7 @@ class CommandMenuMixin:
         return self._ok_response(True)
 
     def _handle_edit_message_text(self: _CommandMenuHost, parameters: dict[str, str]) -> tuple[int, bytes]:
-        msg: dict[str, JsonValue] = self._base_message(parameters)
+        msg: dict[str, JsonValue] = self._edit_message(parameters)
         raw_text = parameters.get("text", "")
         parse_mode = parameters.get("parse_mode", "")
         if parse_mode.lower() == "html":

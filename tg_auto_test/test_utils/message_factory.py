@@ -14,7 +14,10 @@ def build_serverless_message(
 ) -> ServerlessMessage:
     message_id = message_id_from_result(call)
     if call.api_method in ("sendMessage", "editMessageText"):
-        return _build_text_message(call, message_id)
+        msg = _build_text_message(call, message_id)
+        if call.api_method == "editMessageText":
+            msg._is_edit = True  # noqa: SLF001
+        return msg
     if call.api_method == "sendInvoice":
         return build_invoice_message(call)
     if call.api_method == "sendPoll":
