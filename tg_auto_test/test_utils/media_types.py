@@ -6,6 +6,10 @@ MEDIA_PARAM_KEY: dict[str, str] = {
     "sendVoice": "voice",
     "sendPhoto": "photo",
     "sendVideoNote": "video_note",
+    "sendVideo": "video",
+    "sendAnimation": "animation",
+    "sendAudio": "audio",
+    "sendSticker": "sticker",
 }
 
 

@@ -68,6 +68,18 @@ class MediaMixin:
             base["length"] = w
             base["duration"] = max(1, int(round(dur)))
             msg["video_note"] = base
+        elif method in ("sendVideo", "sendAnimation"):
+            dur, w, h = mp4_duration_and_dimensions(raw)
+            base["duration"] = max(1, int(round(dur))) if dur is not None else 0
+            base["width"] = w if w is not None else 0
+            base["height"] = h if h is not None else 0
+            msg["video" if method == "sendVideo" else "animation"] = base
+        elif method == "sendAudio":
+            dur = audio_duration_seconds(raw)
+            base["duration"] = max(1, int(round(dur))) if dur is not None else 0
+            msg["audio"] = base
+        elif method == "sendSticker":
+            msg["sticker"] = base
         return self._ok_response(msg)
 
     def _handle_send_poll(self: _MediaHost, parameters: dict[str, str]) -> tuple[int, bytes]:

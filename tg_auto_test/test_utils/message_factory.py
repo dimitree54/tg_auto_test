@@ -1,18 +1,8 @@
 import json
 
-from telethon.tl.types import (
-    DocumentAttributeAudio,
-    DocumentAttributeFilename,
-    DocumentAttributeVideo,
-    Photo,
-    PhotoSize,
-    TypeDocumentAttribute,
-)
-
-from tg_auto_test.test_utils.media_metadata import audio_duration_seconds, mp4_duration_and_dimensions
 from tg_auto_test.test_utils.media_types import MEDIA_PARAM_KEY
 from tg_auto_test.test_utils.message_factory_invoice import build_invoice_message, message_id_from_result
-from tg_auto_test.test_utils.message_factory_media import image_dimensions, make_document
+from tg_auto_test.test_utils.message_factory_media_builders import MEDIA_METHOD_BUILDERS
 from tg_auto_test.test_utils.message_factory_poll import build_poll_message
 from tg_auto_test.test_utils.models import FileData, ReplyMarkup, ServerlessMessage, TelegramApiCall
 
@@ -36,7 +26,7 @@ def build_serverless_message(
     file_id = call.parameters[param_key]
     raw_bytes, file_data = _resolve_file_data(call, file_id, file_store)
 
-    builder = _METHOD_BUILDERS.get(call.api_method)
+    builder = MEDIA_METHOD_BUILDERS.get(call.api_method)
     if builder is None:
         raise ValueError(f"No builder for API method: {call.api_method}")
 
@@ -56,90 +46,6 @@ def _resolve_file_data(
     if store_entry is not None:
         return store_entry.data, store_entry
     raise RuntimeError(f"No file data for file_id={file_id} in {call.api_method}")
-
-
-def _build_photo_message(
-    file_id: str,
-    raw_bytes: bytes,
-    _file_data: FileData,
-    file_store: dict[str, FileData],
-) -> ServerlessMessage:
-    width, height = image_dimensions(raw_bytes)
-    photo = Photo(
-        id=hash(file_id) & 0x7FFFFFFFFFFFFFFF,
-        access_hash=0,
-        file_reference=b"",
-        date=None,
-        dc_id=1,
-        sizes=[PhotoSize(type="x", w=width, h=height, size=len(raw_bytes))],
-    )
-    return ServerlessMessage(
-        _media_photo=photo,
-        _raw_bytes=raw_bytes,
-        _file_store=file_store,
-        _response_file_id=file_id,
-    )
-
-
-def _build_document_message(
-    file_id: str,
-    raw_bytes: bytes,
-    file_data: FileData,
-    file_store: dict[str, FileData],
-) -> ServerlessMessage:
-    attributes: list[TypeDocumentAttribute] = []
-    attributes.append(DocumentAttributeFilename(file_name=file_data.filename))
-    doc = make_document(file_id, len(raw_bytes), file_data.content_type, attributes)
-    return ServerlessMessage(
-        _media_document=doc,
-        _raw_bytes=raw_bytes,
-        _file_store=file_store,
-        _response_file_id=file_id,
-    )
-
-
-def _build_voice_message(
-    file_id: str,
-    raw_bytes: bytes,
-    file_data: FileData,
-    file_store: dict[str, FileData],
-) -> ServerlessMessage:
-    duration_seconds = audio_duration_seconds(raw_bytes)
-    if duration_seconds is None:
-        raise RuntimeError(f"Failed to extract audio duration for {file_id}")
-    duration = max(1, int(round(duration_seconds)))
-    attributes: list[TypeDocumentAttribute] = []
-    attributes.append(DocumentAttributeAudio(duration=duration, voice=True))
-    doc = make_document(file_id, len(raw_bytes), file_data.content_type, attributes)
-    return ServerlessMessage(
-        _media_document=doc,
-        _raw_bytes=raw_bytes,
-        _file_store=file_store,
-        _response_file_id=file_id,
-    )
-
-
-def _build_video_note_message(
-    file_id: str,
-    raw_bytes: bytes,
-    file_data: FileData,
-    file_store: dict[str, FileData],
-) -> ServerlessMessage:
-    duration_seconds, width, height = mp4_duration_and_dimensions(raw_bytes)
-    if duration_seconds is None:
-        raise RuntimeError(f"Failed to extract video duration for {file_id}")
-    if width is None or height is None:
-        raise RuntimeError(f"Failed to extract video dimensions for {file_id}")
-    duration = max(1, int(round(duration_seconds)))
-    attributes: list[TypeDocumentAttribute] = []
-    attributes.append(DocumentAttributeVideo(duration=duration, w=width, h=height, round_message=True))
-    doc = make_document(file_id, len(raw_bytes), file_data.content_type, attributes)
-    return ServerlessMessage(
-        _media_document=doc,
-        _raw_bytes=raw_bytes,
-        _file_store=file_store,
-        _response_file_id=file_id,
-    )
 
 
 def _parse_reply_markup(parameters: dict[str, str]) -> ReplyMarkup | None:
@@ -164,11 +70,3 @@ def _build_text_message(call: TelegramApiCall, message_id: int) -> ServerlessMes
         text=call.parameters.get("text", ""),
         _reply_markup_data=markup,
     )
-
-
-_METHOD_BUILDERS = {
-    "sendPhoto": _build_photo_message,
-    "sendDocument": _build_document_message,
-    "sendVoice": _build_voice_message,
-    "sendVideoNote": _build_video_note_message,
-}
