@@ -148,6 +148,7 @@ handle_callback  # FastAPI route handler
 reset  # FastAPI route handler
 vote_poll  # FastAPI route handler
 handle_file_upload  # File upload helper function
+_handle_bot_no_response  # FastAPI exception handler
 
 # Type alias used inside string annotation for JsonValue
 JsonPrimitive  # Referenced in JsonValue type alias string

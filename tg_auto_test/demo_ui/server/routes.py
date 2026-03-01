@@ -3,8 +3,8 @@
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast  # noqa: TID251
 
-from fastapi import FastAPI, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, Response
+from fastapi import FastAPI, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, Response
 from telethon.tl.functions.bots import GetBotCommandsRequest, GetBotMenuButtonRequest
 from telethon.tl.types import (
     BotCommandScopeDefault,
@@ -28,6 +28,7 @@ from tg_auto_test.demo_ui.server.routes_interactive import (
 )
 from tg_auto_test.demo_ui.server.serialize import serialize_message
 from tg_auto_test.demo_ui.server.upload_handlers import handle_file_upload
+from tg_auto_test.test_utils.exceptions import BotNoResponseError
 
 if TYPE_CHECKING:
     from tg_auto_test.demo_ui.server.demo_server import DemoServer
@@ -35,6 +36,10 @@ if TYPE_CHECKING:
 
 def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path | None) -> None:
     """Register API routes on the FastAPI app."""
+
+    @app.exception_handler(BotNoResponseError)
+    def _handle_bot_no_response(_request: Request, exc: BotNoResponseError) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
 
     @app.get("/")
     async def index() -> FileResponse:

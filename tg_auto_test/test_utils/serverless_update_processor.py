@@ -1,5 +1,6 @@
 from telegram import Update
 
+from tg_auto_test.test_utils.exceptions import BotNoResponseError
 from tg_auto_test.test_utils.json_types import JsonValue
 from tg_auto_test.test_utils.models import ServerlessMessage, TelegramApiCall
 from tg_auto_test.test_utils.response_processor import extract_responses
@@ -34,7 +35,9 @@ class ServerlessUpdateProcessor:
             client._poll_tracker,  # noqa: SLF001
         )
         if not responses:
-            raise RuntimeError("Bot did not send a recognizable response.")
+            raise BotNoResponseError(
+                "Bot did not respond to the message. It may not have a handler for this message type."
+            )
         for resp in responses:
             client._outbox.append(resp)  # noqa: SLF001
         return responses[-1]
