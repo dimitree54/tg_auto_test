@@ -1,10 +1,11 @@
 """HTTP route handlers for the demo server."""
 
 from pathlib import Path
+import time
 from typing import TYPE_CHECKING, Any, cast  # noqa: TID251
 
 from fastapi import FastAPI, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from telethon.tl.functions.bots import GetBotCommandsRequest, GetBotMenuButtonRequest
 from telethon.tl.types import (
     BotCommandScopeDefault,
@@ -33,6 +34,8 @@ from tg_auto_test.test_utils.exceptions import BotNoResponseError
 if TYPE_CHECKING:
     from tg_auto_test.demo_ui.server.demo_server import DemoServer
 
+_STARTUP_TS = str(int(time.time()))
+
 
 def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path | None) -> None:
     """Register API routes on the FastAPI app."""
@@ -42,10 +45,13 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
         return JSONResponse(status_code=422, content={"detail": str(exc)})
 
     @app.get("/")
-    async def index() -> FileResponse:
-        if templates_dir and (templates_dir / "index.html").exists():
-            return FileResponse(templates_dir / "index.html")
-        raise HTTPException(status_code=404, detail="Template not found")
+    async def index() -> HTMLResponse:
+        if not templates_dir or not (templates_dir / "index.html").exists():
+            raise HTTPException(status_code=404, detail="Template not found")
+        html = (templates_dir / "index.html").read_text()
+        html = html.replace("app.js", f"app.js?v={_STARTUP_TS}")
+        html = html.replace("app.css", f"app.css?v={_STARTUP_TS}")
+        return HTMLResponse(html)
 
     @app.get("/api/file/{file_id}")
     async def serve_file(file_id: str, download: int = 0) -> Response:

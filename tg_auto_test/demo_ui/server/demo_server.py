@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Protocol
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
 
 from tg_auto_test.demo_ui.server.file_store import FileStore
@@ -119,6 +119,13 @@ class DemoServer:
 
         # Store server instance in app state for endpoint access
         app.state.demo_server = self
+
+        # Disable browser caching so assets are always fresh (demo tool, not production)
+        @app.middleware("http")
+        async def _no_cache(request: Request, call_next: Callable[..., Awaitable[Response]]) -> Response:
+            response = await call_next(request)
+            response.headers["Cache-Control"] = "no-store"
+            return response
 
         # Mount static files using library's own assets
         app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")

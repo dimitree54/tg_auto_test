@@ -658,7 +658,7 @@ async function D(e, t) {
       const i = await Y(e);
       w(), F(i), await X();
     } catch (i) {
-      w(), C(`[Error: ${N(i)}]`, "received");
+      w(), C(`[${N(i)}]`, "received");
     }
     u.sending = !1, L(!1), n.inputEl.focus();
   }
@@ -699,7 +699,7 @@ async function Z() {
     try {
       await qe(a.file, a.type, o), w();
     } catch (l) {
-      w(), C(`[Upload error: ${N(l)}]`, "received");
+      w(), C(`[${N(l)}]`, "received");
     }
   }
   u.sending = !1, L(!1), e.inputEl.focus(), await X();

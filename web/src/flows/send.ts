@@ -37,7 +37,7 @@ export async function sendTextMessage(
     await refreshBotState();
   } catch (error) {
     hideTyping();
-    addTextMessage(`[Error: ${errorMessage(error)}]`, 'received');
+    addTextMessage(`[${errorMessage(error)}]`, 'received');
   }
   appState.sending = false;
   setInputsDisabled(false);
@@ -99,7 +99,7 @@ export async function handleSend(): Promise<void> {
       hideTyping();
     } catch (error) {
       hideTyping();
-      addTextMessage(`[Upload error: ${errorMessage(error)}]`, 'received');
+      addTextMessage(`[${errorMessage(error)}]`, 'received');
     }
   }
 
