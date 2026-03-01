@@ -1,6 +1,7 @@
 import json
 from typing import Protocol
 
+from tg_auto_test.test_utils.html_parser import parse_html
 from tg_auto_test.test_utils.json_types import JsonValue
 from tg_auto_test.test_utils.media_metadata import audio_duration_seconds, mp4_duration_and_dimensions
 from tg_auto_test.test_utils.media_types import MEDIA_PARAM_KEY
@@ -80,6 +81,17 @@ class MediaMixin:
             msg["audio"] = base
         elif method == "sendSticker":
             msg["sticker"] = base
+
+        caption = parameters.get("caption", "")
+        parse_mode = parameters.get("parse_mode", "")
+        if caption and parse_mode.lower() == "html":
+            parsed_caption, caption_entities = parse_html(caption)
+            msg["caption"] = parsed_caption
+            if caption_entities:
+                msg["caption_entities"] = caption_entities
+        elif caption:
+            msg["caption"] = caption
+
         return self._ok_response(msg)
 
     def _handle_send_poll(self: _MediaHost, parameters: dict[str, str]) -> tuple[int, bytes]:

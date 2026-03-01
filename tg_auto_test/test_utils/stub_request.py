@@ -3,6 +3,7 @@ import json
 
 from telegram.request import BaseRequest, RequestData
 
+from tg_auto_test.test_utils.html_parser import parse_html
 from tg_auto_test.test_utils.json_types import JsonValue
 from tg_auto_test.test_utils.media_types import MEDIA_PARAM_KEY
 from tg_auto_test.test_utils.models import FileData, TelegramApiCall
@@ -10,6 +11,15 @@ from tg_auto_test.test_utils.stub_request_commands import CommandMenuMixin
 from tg_auto_test.test_utils.stub_request_media import MediaMixin
 
 _FILE_PATH_PREFIX = "/file/bot"
+
+
+def _apply_parse_mode(parameters: dict[str, str], text_key: str = "text") -> tuple[str, list[dict[str, JsonValue]]]:
+    """Parse HTML/Markdown formatting when parse_mode is set."""
+    raw_text = parameters.get(text_key, "")
+    parse_mode = parameters.get("parse_mode", "")
+    if parse_mode.lower() == "html":
+        return parse_html(raw_text)
+    return raw_text, []
 
 
 class StubTelegramRequest(CommandMenuMixin, MediaMixin, BaseRequest):
@@ -132,7 +142,10 @@ class StubTelegramRequest(CommandMenuMixin, MediaMixin, BaseRequest):
 
     def _handle_send_message(self, parameters: dict[str, str]) -> tuple[int, bytes]:
         msg = self._base_message(parameters)
-        msg["text"] = parameters["text"]
+        text, entities = _apply_parse_mode(parameters)
+        msg["text"] = text
+        if entities:
+            msg["entities"] = entities
         if "reply_markup" in parameters:
             markup = json.loads(parameters["reply_markup"])
             # Only include InlineKeyboardMarkup in the response (Telegram API spec).

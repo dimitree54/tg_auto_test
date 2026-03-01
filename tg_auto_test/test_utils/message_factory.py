@@ -1,5 +1,6 @@
 import json
 
+from tg_auto_test.test_utils.entity_converter import convert_entities
 from tg_auto_test.test_utils.media_types import MEDIA_PARAM_KEY
 from tg_auto_test.test_utils.message_factory_invoice import build_invoice_message, message_id_from_result
 from tg_auto_test.test_utils.message_factory_media_builders import MEDIA_METHOD_BUILDERS
@@ -63,10 +64,32 @@ def _parse_reply_markup(parameters: dict[str, str]) -> ReplyMarkup | None:
     return markup
 
 
+def _extract_entities_from_result(call: TelegramApiCall) -> list[object]:
+    """Extract and convert entities from the API response."""
+    if not isinstance(call.result, dict):
+        return []
+    raw_entities = call.result.get("entities")
+    if not isinstance(raw_entities, list):
+        return []
+    return convert_entities(raw_entities)
+
+
 def _build_text_message(call: TelegramApiCall, message_id: int) -> ServerlessMessage:
     markup = _parse_reply_markup(call.parameters)
+    text = _text_from_result(call)
+    entities = _extract_entities_from_result(call)
     return ServerlessMessage(
         id=message_id,
-        text=call.parameters.get("text", ""),
+        text=text,
+        entities=entities,
         _reply_markup_data=markup,
     )
+
+
+def _text_from_result(call: TelegramApiCall) -> str:
+    """Get the processed text from the API response (HTML-stripped when applicable)."""
+    if isinstance(call.result, dict):
+        result_text = call.result.get("text")
+        if isinstance(result_text, str):
+            return result_text
+    return call.parameters.get("text", "")

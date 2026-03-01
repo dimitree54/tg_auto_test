@@ -24,6 +24,7 @@ class ServerlessMessage(ServerlessMessageProperties):
 
     id: int = 0
     text: str = ""
+    entities: list[object] = field(default_factory=list)
     _media_photo: Photo | None = None
     _media_document: Document | None = None
     _invoice_data: MessageMediaInvoice | None = None

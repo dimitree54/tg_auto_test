@@ -126,7 +126,8 @@ class TestMessageConformance:
         }
 
         # Allow attributes that exist in Telethon or are specifically allowed extras
-        allowed_extra_attrs = {"id", "text"}  # These are properties in Telethon but public attrs in our implementation
+        # These are instance attrs in Telethon (set in __init__) but public dataclass fields in ours
+        allowed_extra_attrs = {"id", "text", "entities"}
 
         extra_attrs = our_attrs - telethon_attrs - allowed_extra_attrs
         assert not extra_attrs, f"Extra public attributes found: {extra_attrs}"

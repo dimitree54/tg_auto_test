@@ -154,6 +154,11 @@ _no_cache  # FastAPI middleware for cache busting
 # Type alias used inside string annotation for JsonValue
 JsonPrimitive  # Referenced in JsonValue type alias string
 
+# HTMLParser overrides (called by stdlib parser framework)
+handle_starttag
+handle_endtag
+handle_data
+
 # Mock attributes in tests (vulture false positives)
 __aenter__  # Async context manager mock setup
 __aexit__  # Async context manager mock setup

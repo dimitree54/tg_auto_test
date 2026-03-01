@@ -35,6 +35,7 @@
 
 .message .text {
   margin-right: 48px;
+  white-space: pre-wrap;
 }
 
 .message .meta {
@@ -54,6 +55,7 @@
 .message .caption {
   margin-top: 4px;
   margin-right: 48px;
+  white-space: pre-wrap;
 }
 
 /* Media in messages */
