@@ -152,6 +152,10 @@ Bot configuration:
 - `setMyCommands`, `getMyCommands`, `deleteMyCommands` — manage bot commands
 - `setChatMenuButton`, `getChatMenuButton` — manage chat menu button
 
+Actions & lifecycle:
+- `sendChatAction` — send chat action (typing, uploading, etc.)
+- `deleteMessage` — delete a message
+
 Utilities:
 - `getMe` — get bot information
 - `getFile` — get file information
@@ -162,7 +166,7 @@ Utilities:
 - PTB-only bridge (architecture allows adding aiogram, raw HTTP adapters)
 - Unsupported Bot API methods raise `AssertionError` (fail-fast design)
 - Single private chat only — no multi-user, group chats, or channels
-- No message edit tracking, reactions, or albums
+- No reactions or albums
 - No support for `sendVideo`, `sendAudio`, `sendAnimation`, `sendLocation`, `sendSticker`
 
 **Extension points:**

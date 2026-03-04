@@ -58,6 +58,7 @@ class StubTelegramRequest(CommandMenuMixin, MediaMixin, BaseRequest):
             "getChatMenuButton": self._handle_get_chat_menu_button,
             "answerCallbackQuery": self._handle_answer_callback_query,
             "editMessageText": self._handle_edit_message_text,
+            "deleteMessage": self._handle_ack,
             "sendPoll": self._handle_send_poll,
         }
 

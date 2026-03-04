@@ -24,3 +24,6 @@ Now you accepting a role of professional tests writer and bug hunter. You main r
 3. Report to user that
     - Reproducing test is ready and failing
     - Results of your debug investigation
+
+# Error not reproducable
+If you can not reproduce the bug - communicate with user, gather more info from the, what was the app state, what data they used.

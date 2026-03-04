@@ -1,3 +1,5 @@
+from collections import deque
+
 from telegram import Update
 
 from tg_auto_test.test_utils.exceptions import BotNoResponseError
@@ -39,5 +41,34 @@ class ServerlessUpdateProcessor:
                 "Bot did not respond to the message. It may not have a handler for this message type."
             )
         for resp in responses:
-            client._outbox.append(resp)  # noqa: SLF001
+            if resp._is_edit:  # noqa: SLF001
+                _replace_edited_message(client._outbox, resp)  # noqa: SLF001
+            else:
+                client._outbox.append(resp)  # noqa: SLF001
+        _apply_deletions(new_calls, client._outbox)  # noqa: SLF001
         return responses[-1]
+
+
+def _apply_deletions(
+    calls: list[TelegramApiCall],
+    outbox: deque[ServerlessMessage],
+) -> None:
+    for call in calls:
+        if call.api_method != "deleteMessage":
+            continue
+        msg_id = int(call.parameters["message_id"])
+        for i, existing in enumerate(outbox):
+            if existing.id == msg_id:
+                del outbox[i]
+                break
+
+
+def _replace_edited_message(
+    outbox: deque[ServerlessMessage],
+    edited: ServerlessMessage,
+) -> None:
+    for i, existing in enumerate(outbox):
+        if existing.id == edited.id:
+            outbox[i] = edited
+            return
+    outbox.append(edited)

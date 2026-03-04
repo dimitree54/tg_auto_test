@@ -1,7 +1,6 @@
 ---
 name: reproduce-fix-release
 description: Pipeline of TDD bug fixing
-disable-model-invocation: true
 ---
 
 1. Ask "reproduce-bug" subagent to reproduce the bug. Note: do not use "reproduce-bug" as a skill, but strictly as a subagent.
