@@ -36,6 +36,7 @@ class StubTelegramRequest(CommandMenuMixin, MediaMixin, BaseRequest):
         self._menu_button: dict[str, str] | None = None
         self._bot_username = bot_username
         self._bot_first_name = bot_first_name
+        self.on_api_call: Callable[[TelegramApiCall], None] | None = None
         self._handlers: dict[str, StubTelegramRequest.TelegramApiHandler] = {
             "getMe": self._handle_get_me,
             "getFile": self._handle_get_file,
@@ -103,6 +104,8 @@ class StubTelegramRequest(CommandMenuMixin, MediaMixin, BaseRequest):
             body = json.loads(payload)
             result = body.get("result")
         self.calls[-1] = TelegramApiCall(api_method=api_method, parameters=parameters, file=file_data, result=result)
+        if self.on_api_call is not None:
+            self.on_api_call(self.calls[-1])
         return status_code, payload
 
     def _extract_file(

@@ -1,11 +1,14 @@
 """Drain all bot responses from a conversation and serialize them."""
 
+import asyncio
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING  # noqa: TID251
 
 from tg_auto_test.demo_ui.server.api_models import MessageResponse
 from tg_auto_test.demo_ui.server.file_store import FileStore
 from tg_auto_test.demo_ui.server.serialize import serialize_message
+from tg_auto_test.test_utils.models import ServerlessMessage
+from tg_auto_test.test_utils.streaming_processor import _SENTINEL
 
 if TYPE_CHECKING:
     from tg_auto_test.demo_ui.server.demo_server import DemoConversationProtocol
@@ -35,10 +38,9 @@ async def drain_sse_events(
     conv: "DemoConversationProtocol",
     file_store: FileStore,
 ) -> AsyncIterator[str]:
-    """Yield SSE-formatted events as bot responses arrive.
+    """Yield SSE events from a conversation whose outbox is already populated.
 
-    Each event is ``data: <json>\\n\\n``. A final ``data: [DONE]\\n\\n``
-    signals the stream end.
+    Use ``stream_sse_from_queue`` for the concurrent-handler path.
     """
     first = await conv.get_response()
     serialized = await serialize_message(first, file_store)
@@ -49,5 +51,23 @@ async def drain_sse_events(
         except RuntimeError:
             break
         serialized = await serialize_message(msg, file_store)
+        yield f"data: {serialized.model_dump_json()}\n\n"
+    yield "data: [DONE]\n\n"
+
+
+async def stream_sse_from_queue(
+    queue: "asyncio.Queue[ServerlessMessage | object]",
+    file_store: FileStore,
+) -> AsyncIterator[str]:
+    """Yield SSE events by reading from an ``asyncio.Queue`` fed by the handler.
+
+    The handler runs concurrently and puts ``ServerlessMessage`` objects on the
+    queue as they are produced. A sentinel signals the handler is done.
+    """
+    while True:
+        item = await queue.get()
+        if item is _SENTINEL:
+            break
+        serialized = await serialize_message(item, file_store)  # type: ignore[arg-type]
         yield f"data: {serialized.model_dump_json()}\n\n"
     yield "data: [DONE]\n\n"
