@@ -10,7 +10,7 @@ import {
   addPhotoMessage,
   addTextMessage,
   addVideoNoteMessage,
-  renderBotResponse,
+  renderBotResponses,
 } from '../ui/messages';
 import { hideTyping, showTyping } from '../ui/typing';
 import { errorMessage } from '../utils/errors';
@@ -33,7 +33,7 @@ export async function sendTextMessage(
   try {
     const data = await sendMessage(text);
     hideTyping();
-    renderBotResponse(data);
+    renderBotResponses(data);
     await refreshBotState();
   } catch (error) {
     hideTyping();
@@ -46,7 +46,7 @@ export async function sendTextMessage(
 
 async function sendFileToApi(file: File, fileType: FileUploadType, caption: string): Promise<void> {
   const data = await sendFile(file, fileType, caption);
-  renderBotResponse(data);
+  renderBotResponses(data);
 }
 
 export async function handleSend(): Promise<void> {

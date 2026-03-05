@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING  # noqa: TID251
 from fastapi import UploadFile
 
 from tg_auto_test.demo_ui.server.api_models import MessageResponse
-from tg_auto_test.demo_ui.server.serialize import serialize_message
+from tg_auto_test.demo_ui.server.response_drain import drain_and_serialize
 
 if TYPE_CHECKING:
     from tg_auto_test.demo_ui.server.demo_server import DemoServer
@@ -19,7 +19,7 @@ async def handle_file_upload(
     force_document: bool = False,
     voice_note: bool = False,
     video_note: bool = False,
-) -> MessageResponse:
+) -> list[MessageResponse]:
     """Handle file upload for any media type."""
     data = await file.read()
 
@@ -32,6 +32,4 @@ async def handle_file_upload(
             voice_note=voice_note,
             video_note=video_note,
         )
-        response = await conv.get_response()
-
-    return await serialize_message(response, demo_server.file_store)
+        return await drain_and_serialize(conv, demo_server.file_store)

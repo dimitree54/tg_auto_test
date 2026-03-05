@@ -101,7 +101,9 @@ def test_demo_api_callback_edit_returns_edit_flag() -> None:
         # Step 1: send /menu to get inline keyboard
         resp = http.post("/api/message", json={"text": "/menu"})
         assert resp.status_code == 200
-        menu_data = resp.json()
+        messages = resp.json()
+        assert isinstance(messages, list)
+        menu_data = messages[0]
         assert menu_data["text"] == "Original text"
         original_msg_id = menu_data["message_id"]
         assert original_msg_id > 0

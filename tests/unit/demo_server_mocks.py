@@ -9,11 +9,14 @@ class MockConversation:
     """Mock conversation for testing demo server."""
 
     def __init__(self, response: ServerlessMessage) -> None:
-        self._response = response
+        self._response: ServerlessMessage | None = response
 
     async def get_response(self) -> ServerlessMessage:
-        """Get the response for the conversation."""
-        return self._response
+        if self._response is None:
+            raise RuntimeError("No pending response.")
+        resp = self._response
+        self._response = None
+        return resp
 
     async def __aenter__(self) -> "MockConversation":
         """Enter the async context manager."""

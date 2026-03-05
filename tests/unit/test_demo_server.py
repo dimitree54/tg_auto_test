@@ -105,7 +105,9 @@ def test_poll_vote_endpoint() -> None:
         response = client.post("/api/poll/vote", json={"message_id": 123, "option_ids": [0]})
 
     assert response.status_code == 200
-    data = response.json()
+    messages = response.json()
+    assert isinstance(messages, list)
+    data = messages[0]
     assert data["type"] == "text"
     assert data["text"] == "You voted for: Red"
     assert data["message_id"] == 456
@@ -125,7 +127,7 @@ def test_photo_endpoint_returns_text_response_when_bot_replies_with_text() -> No
     # Set up the mock conversation context manager
     mock_conv = MagicMock()
     mock_conv.send_file = AsyncMock()
-    mock_conv.get_response = AsyncMock(return_value=bot_response)
+    mock_conv.get_response = AsyncMock(side_effect=[bot_response, RuntimeError("No pending response.")])
 
     mock_conv_cm = MagicMock()
     mock_conv_cm.__aenter__ = AsyncMock(return_value=mock_conv)
@@ -147,7 +149,9 @@ def test_photo_endpoint_returns_text_response_when_bot_replies_with_text() -> No
         )
 
     assert response.status_code == 200
-    data = response.json()
+    messages = response.json()
+    assert isinstance(messages, list)
+    data = messages[0]
     assert data["type"] == "text"
     assert data["text"] == "I got your photo!"
     assert data["message_id"] == 42

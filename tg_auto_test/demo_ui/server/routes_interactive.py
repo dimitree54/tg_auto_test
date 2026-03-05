@@ -13,13 +13,14 @@ from tg_auto_test.demo_ui.server.api_models import (
     MessageResponse,
     PollVoteRequest,
 )
+from tg_auto_test.demo_ui.server.response_drain import drain_and_serialize
 from tg_auto_test.demo_ui.server.serialize import serialize_message
 
 if TYPE_CHECKING:
     from tg_auto_test.demo_ui.server.demo_server import DemoServer
 
 
-async def handle_pay_invoice(demo_server: "DemoServer", req: InvoicePayRequest) -> MessageResponse:
+async def handle_pay_invoice(demo_server: "DemoServer", req: InvoicePayRequest) -> list[MessageResponse]:
     """Handle invoice payment request."""
     peer = await demo_server.client.get_input_entity(demo_server.peer)
     request = SendStarsFormRequest(
@@ -28,8 +29,7 @@ async def handle_pay_invoice(demo_server: "DemoServer", req: InvoicePayRequest) 
     )
     async with demo_server.client.conversation(demo_server.peer, timeout=demo_server.timeout) as conv:
         await demo_server.client(request)
-        response = await conv.get_response()
-    return await serialize_message(response, demo_server.file_store)
+        return await drain_and_serialize(conv, demo_server.file_store)
 
 
 async def handle_callback(demo_server: "DemoServer", req: CallbackRequest) -> MessageResponse:
@@ -44,7 +44,7 @@ async def handle_callback(demo_server: "DemoServer", req: CallbackRequest) -> Me
     return await serialize_message(response, demo_server.file_store)
 
 
-async def handle_poll_vote(demo_server: "DemoServer", request: PollVoteRequest) -> MessageResponse:
+async def handle_poll_vote(demo_server: "DemoServer", request: PollVoteRequest) -> list[MessageResponse]:
     """Handle poll vote by calling Telethon SendVoteRequest."""
     peer = await demo_server.client.get_input_entity(demo_server.peer)
 
@@ -61,7 +61,4 @@ async def handle_poll_vote(demo_server: "DemoServer", request: PollVoteRequest) 
     # Execute the request and get response using conversation pattern
     async with demo_server.client.conversation(demo_server.peer, timeout=demo_server.timeout) as conv:
         await demo_server.client(vote_request)
-        response = await conv.get_response()
-
-    # Serialize the bot response
-    return await serialize_message(response, demo_server.file_store)
+        return await drain_and_serialize(conv, demo_server.file_store)

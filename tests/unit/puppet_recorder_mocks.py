@@ -9,12 +9,16 @@ class MockRecorderConversation:
     """Mock conversation context manager for recorder testing."""
 
     def __init__(self, response: ServerlessMessage) -> None:
-        self._response = response
+        self._response: ServerlessMessage | None = response
         self.send_message = AsyncMock()
         self.send_file = AsyncMock()
 
     async def get_response(self) -> ServerlessMessage:
-        return self._response
+        if self._response is None:
+            raise RuntimeError("No pending response.")
+        resp = self._response
+        self._response = None
+        return resp
 
     async def __aenter__(self) -> "MockRecorderConversation":
         return self

@@ -13,7 +13,7 @@ from tg_auto_test.demo_ui.server.api_models import (
     TextMessageRequest,
 )
 from tg_auto_test.demo_ui.server.file_store import build_file_response
-from tg_auto_test.demo_ui.server.serialize import serialize_message
+from tg_auto_test.demo_ui.server.response_drain import drain_and_serialize
 from tg_auto_test.demo_ui.server.upload_handlers import handle_file_upload
 
 if TYPE_CHECKING:
@@ -28,78 +28,82 @@ def register_recorder_routes(app: FastAPI, server: "PuppetRecorderServer") -> No
         return build_file_response(server.file_store, file_id, download=bool(download))
 
     @app.post("/api/message")
-    async def send_message(req: TextMessageRequest) -> MessageResponse:
+    async def send_message(req: TextMessageRequest) -> list[MessageResponse]:
         async with server.client.conversation(server.peer, timeout=server.timeout) as conv:
             await conv.send_message(req.text)
-            response = await conv.get_response()
-        result = await serialize_message(response, server.file_store)
+            results = await drain_and_serialize(conv, server.file_store)
+        last = results[-1]
         server.session.add_step(
             RecordedStep(
                 action="send_message",
                 text=req.text,
-                response_type=result.type,
-                response_text=result.text,
-                response_message_id=result.message_id,
+                response_type=last.type,
+                response_text=last.text,
+                response_message_id=last.message_id,
             )
         )
-        return result
+        return results
 
     @app.post("/api/photo")
-    async def send_photo(file: UploadFile, caption: str = Form("")) -> MessageResponse:
-        result = await handle_file_upload(server, file, caption=caption)
+    async def send_photo(file: UploadFile, caption: str = Form("")) -> list[MessageResponse]:
+        results = await handle_file_upload(server, file, caption=caption)
+        last = results[-1]
         server.session.add_step(
             RecordedStep(
                 action="send_file",
                 file_type="photo",
                 caption=caption,
-                response_type=result.type,
-                response_text=result.text,
-                response_message_id=result.message_id,
+                response_type=last.type,
+                response_text=last.text,
+                response_message_id=last.message_id,
             )
         )
-        return result
+        return results
 
     @app.post("/api/document")
-    async def send_document(file: UploadFile) -> MessageResponse:
-        result = await handle_file_upload(server, file, force_document=True)
+    async def send_document(file: UploadFile) -> list[MessageResponse]:
+        results = await handle_file_upload(server, file, force_document=True)
+        last = results[-1]
         server.session.add_step(
             RecordedStep(
                 action="send_file",
                 file_type="document",
-                response_type=result.type,
-                response_text=result.text,
-                response_message_id=result.message_id,
+                response_type=last.type,
+                response_text=last.text,
+                response_message_id=last.message_id,
             )
         )
-        return result
+        return results
 
     @app.post("/api/voice")
-    async def send_voice(file: UploadFile) -> MessageResponse:
-        result = await handle_file_upload(server, file, voice_note=True)
+    async def send_voice(file: UploadFile) -> list[MessageResponse]:
+        results = await handle_file_upload(server, file, voice_note=True)
+        last = results[-1]
         server.session.add_step(
             RecordedStep(
                 action="send_file",
                 file_type="voice",
-                response_type=result.type,
-                response_text=result.text,
-                response_message_id=result.message_id,
+                response_type=last.type,
+                response_text=last.text,
+                response_message_id=last.message_id,
             )
         )
-        return result
+        return results
 
     @app.post("/api/video_note")
-    async def send_video_note(file: UploadFile) -> MessageResponse:
-        result = await handle_file_upload(server, file, video_note=True)
+    async def send_video_note(file: UploadFile) -> list[MessageResponse]:
+        results = await handle_file_upload(server, file, video_note=True)
+        last = results[-1]
         server.session.add_step(
             RecordedStep(
                 action="send_file",
                 file_type="video_note",
-                response_type=result.type,
-                response_text=result.text,
-                response_message_id=result.message_id,
+                response_type=last.type,
+                response_text=last.text,
+                response_message_id=last.message_id,
             )
         )
-        return result
+        return results
 
     @app.post("/api/callback")
     async def handle_callback(req: CallbackRequest) -> MessageResponse:

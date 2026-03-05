@@ -118,7 +118,7 @@ class TestRecordingMessageRoutes:
         test_client.post("/api/recording/start")
         resp = test_client.post("/api/message", json={"text": "hello"})
         assert resp.status_code == 200
-        assert resp.json()["text"] == "echo"
+        assert resp.json()[0]["text"] == "echo"
         steps = test_client.get("/api/recording/steps").json()
         assert len(steps) == 1
         assert steps[0]["action"] == "send_message"

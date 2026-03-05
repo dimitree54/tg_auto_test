@@ -1,6 +1,6 @@
 import { sendMessage } from '../api/bot';
 import { refreshBotState } from '../features/commands/panel';
-import { addTextMessage, renderBotResponse } from '../ui/messages';
+import { addTextMessage, renderBotResponses } from '../ui/messages';
 import { getEls, showActiveState } from '../ui/dom';
 import { hideTyping, showTyping } from '../ui/typing';
 import { errorMessage } from '../utils/errors';
@@ -15,7 +15,7 @@ export async function handleStart(): Promise<void> {
   try {
     const data = await sendMessage('/start');
     hideTyping();
-    renderBotResponse(data);
+    renderBotResponses(data);
     await refreshBotState();
   } catch (error) {
     hideTyping();

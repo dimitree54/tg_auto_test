@@ -68,11 +68,13 @@ async function handlePollVote(messageId: number, optionIds: number[]): Promise<v
     showTyping();
 
     // Call the API to vote
-    const response = await votePoll(messageId, optionIds);
+    const responses = await votePoll(messageId, optionIds);
 
-    // Show the bot's response as a text message
-    if (response.text) {
-      addTextMessage(response.text, 'received');
+    // Show all bot responses as text messages
+    for (const response of responses) {
+      if (response.text) {
+        addTextMessage(response.text, 'received');
+      }
     }
 
   } catch (error) {
