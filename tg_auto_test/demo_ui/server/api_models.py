@@ -1,6 +1,6 @@
 """API request and response models for the demo server."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class TextMessageRequest(BaseModel):
@@ -47,3 +47,11 @@ class MessageResponse(BaseModel):
     poll_id: str = ""
     entities: list[dict[str, str | int]] = []
     is_edit: bool = False
+
+
+class DemoTraceEvent(BaseModel):
+    trace_id: str
+    scope: str
+    name: str
+    ts: str
+    payload: dict[str, object] = Field(default_factory=dict)

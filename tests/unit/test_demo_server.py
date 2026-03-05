@@ -10,7 +10,7 @@ import pytest
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, ApplicationBuilder, ContextTypes, MessageHandler, filters
 
-from tests.unit.sse_helpers import make_png_bytes, parse_sse_messages
+from tests.unit.sse_helpers import make_png_bytes, parse_sse_events, parse_sse_messages
 from tg_auto_test.demo_ui.server.demo_server import DemoClientProtocol, DemoServer, create_demo_app
 from tg_auto_test.demo_ui.server.file_store import FileStore
 from tg_auto_test.test_utils.serverless_telegram_client import ServerlessTelegramClient
@@ -111,6 +111,48 @@ def test_poll_vote_endpoint() -> None:
     call_args = mock_client._call_log[0]
     assert call_args.msg_id == 123
     assert call_args.options == [bytes([0])]
+
+
+def test_message_endpoint_uses_telethon_fallback_when_serverless_attrs_missing() -> None:
+    """Text requests should work via conversation.send_message fallback."""
+    from tests.unit.demo_server_mocks import MockDemoClient  # noqa: PLC0415
+
+    mock_client = MockDemoClient()
+    server = DemoServer(cast(DemoClientProtocol, mock_client), "test_bot")
+    app = server.create_app()
+
+    with TestClient(app) as client:
+        response = client.post("/api/message", json={"text": "hello"})
+
+    assert response.status_code == 200
+    events = parse_sse_events(response)
+    trace_events = [event["data"] for event in events if event["event"] == "trace"]
+    assert any(
+        event["name"] == "mode_selected" and event["payload"]["mode"] == "telethon_fallback" for event in trace_events
+    )
+    messages = [event["data"] for event in events if event["event"] == "message"]
+    assert len(messages) == 1
+    assert messages[0]["text"] == "You voted for: Red"
+    assert mock_client._sent_messages == ["hello"]
+
+
+def test_document_endpoint_uses_telethon_fallback_when_serverless_attrs_missing() -> None:
+    """File requests should work via conversation.send_file fallback."""
+    from tests.unit.demo_server_mocks import MockDemoClient  # noqa: PLC0415
+
+    mock_client = MockDemoClient()
+    server = DemoServer(cast(DemoClientProtocol, mock_client), "test_bot")
+    app = server.create_app()
+
+    with TestClient(app) as client:
+        response = client.post("/api/document", files={"file": ("test.txt", io.BytesIO(b"hello"), "text/plain")})
+
+    assert response.status_code == 200
+    messages = parse_sse_messages(response)
+    assert len(messages) == 1
+    assert messages[0]["text"] == "You voted for: Red"
+    assert len(mock_client._sent_files) == 1
+    assert mock_client._sent_files[0]["force_document"] is True
 
 
 async def _photo_text_reply_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

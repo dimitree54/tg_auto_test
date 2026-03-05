@@ -1,3 +1,5 @@
+import type { DemoTraceEvent } from '../types/api';
+
 async function readJson<T>(res: Response): Promise<T> {
   const data = (await res.json()) as T;
   return data;
@@ -40,33 +42,48 @@ export async function postNoBody<T>(path: string): Promise<T> {
 export async function postJsonSSE<T>(
   path: string,
   body: unknown,
-  onEvent: (data: T) => void,
+  callbacks: {
+    onMessage: (data: T) => void;
+    onTrace: (event: DemoTraceEvent) => void;
+  },
+  headers: HeadersInit = {},
 ): Promise<void> {
   const res = await fetch(path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw await httpError('POST', path, res);
-  await readSSE(res, onEvent);
+  await readSSE(res, callbacks);
 }
 
 export async function postFormSSE<T>(
   path: string,
   form: FormData,
-  onEvent: (data: T) => void,
+  callbacks: {
+    onMessage: (data: T) => void;
+    onTrace: (event: DemoTraceEvent) => void;
+  },
+  headers: HeadersInit = {},
 ): Promise<void> {
-  const res = await fetch(path, { method: 'POST', body: form });
+  const res = await fetch(path, { method: 'POST', body: form, headers });
   if (!res.ok) throw await httpError('POST', path, res);
-  await readSSE(res, onEvent);
+  await readSSE(res, callbacks);
 }
 
-async function readSSE<T>(res: Response, onEvent: (data: T) => void): Promise<void> {
+async function readSSE<T>(
+  res: Response,
+  callbacks: {
+    onMessage: (data: T) => void;
+    onTrace: (event: DemoTraceEvent) => void;
+  },
+): Promise<void> {
   const reader = res.body?.getReader();
   if (!reader) return;
 
   const decoder = new TextDecoder();
   let buffer = '';
+  let failureDetail = '';
 
   for (;;) {
     const { done, value } = await reader.read();
@@ -77,11 +94,30 @@ async function readSSE<T>(res: Response, onEvent: (data: T) => void): Promise<vo
     buffer = parts.pop() ?? '';
 
     for (const part of parts) {
-      const line = part.trim();
-      if (!line.startsWith('data: ')) continue;
-      const payload = line.slice('data: '.length);
+      const lines = part
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+      let eventName = 'message';
+      const dataLines: string[] = [];
+      for (const line of lines) {
+        if (line.startsWith('event: ')) eventName = line.slice('event: '.length);
+        if (line.startsWith('data: ')) dataLines.push(line.slice('data: '.length));
+      }
+      if (dataLines.length === 0) continue;
+      const payload = dataLines.join('\n');
       if (payload === '[DONE]') continue;
-      onEvent(JSON.parse(payload) as T);
+      if (eventName === 'trace') {
+        const event = JSON.parse(payload) as DemoTraceEvent;
+        callbacks.onTrace(event);
+        if (event.name === 'request_failed') {
+          const detail = event.payload.detail;
+          failureDetail = typeof detail === 'string' ? detail : 'Demo request failed';
+        }
+        continue;
+      }
+      callbacks.onMessage(JSON.parse(payload) as T);
     }
   }
+  if (failureDetail) throw new Error(failureDetail);
 }

@@ -55,3 +55,13 @@ export interface BotStateResponse {
   commands: BotCommandInfo[];
   menu_button_type: string;
 }
+
+export type DemoTraceScope = 'ui' | 'server' | 'bot';
+
+export interface DemoTraceEvent {
+  trace_id: string;
+  scope: DemoTraceScope;
+  name: string;
+  ts: string;
+  payload: Record<string, unknown>;
+}

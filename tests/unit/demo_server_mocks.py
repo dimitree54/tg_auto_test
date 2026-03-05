@@ -8,8 +8,29 @@ from tg_auto_test.test_utils.models import ServerlessMessage
 class MockConversation:
     """Mock conversation for testing demo server."""
 
-    def __init__(self, response: ServerlessMessage) -> None:
+    def __init__(self, response: ServerlessMessage, client: "MockDemoClient") -> None:
         self._response: ServerlessMessage | None = response
+        self._client = client
+
+    async def send_message(self, text: str) -> None:
+        self._client._sent_messages.append(text)
+
+    async def send_file(
+        self,
+        file: bytes,
+        *,
+        caption: str = "",
+        force_document: bool = False,
+        voice_note: bool = False,
+        video_note: bool = False,
+    ) -> None:
+        self._client._sent_files.append({
+            "caption": caption,
+            "force_document": force_document,
+            "size_bytes": len(file),
+            "video_note": video_note,
+            "voice_note": voice_note,
+        })
 
     async def get_response(self) -> ServerlessMessage:
         if self._response is None:
@@ -35,11 +56,13 @@ class MockDemoClient:
         self.disconnect = AsyncMock()
         self.get_messages = AsyncMock()
         self._call_log: list = []
+        self._sent_files: list[dict[str, object]] = []
+        self._sent_messages: list[str] = []
         self._response = ServerlessMessage(id=456, text="You voted for: Red")
 
     def conversation(self, peer: object, *, timeout: float = 60.0) -> MockConversation:  # noqa: ARG002
         """Create a conversation context manager."""
-        return MockConversation(self._response)
+        return MockConversation(self._response, self)
 
     def _pop_response(self) -> ServerlessMessage:
         """Private method for testing - matches implementation."""

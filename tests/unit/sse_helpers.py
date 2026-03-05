@@ -7,20 +7,33 @@ from httpx import Response
 from PIL import Image
 
 
-def parse_sse_messages(response: Response) -> list[dict]:
-    """Parse SSE events from a streaming response, returning message dicts.
-
-    Skips the ``[DONE]`` sentinel.
-    """
-    messages: list[dict] = []
-    for line in response.text.splitlines():
-        if not line.startswith("data: "):
+def parse_sse_events(response: Response) -> list[dict[str, object]]:
+    """Parse SSE events from a streaming response."""
+    events: list[dict[str, object]] = []
+    for chunk in response.text.split("\n\n"):
+        lines = [line for line in chunk.splitlines() if line]
+        if not lines:
             continue
-        payload = line[len("data: ") :]
+        event_name = "message"
+        data_parts: list[str] = []
+        for line in lines:
+            if line.startswith("event: "):
+                event_name = line[len("event: ") :]
+            elif line.startswith("data: "):
+                data_parts.append(line[len("data: ") :])
+        if not data_parts:
+            continue
+        payload = "\n".join(data_parts)
         if payload == "[DONE]":
+            events.append({"event": "done", "data": payload})
             continue
-        messages.append(json.loads(payload))
-    return messages
+        events.append({"event": event_name, "data": json.loads(payload)})
+    return events
+
+
+def parse_sse_messages(response: Response) -> list[dict]:
+    """Parse SSE message events from a streaming response."""
+    return [event["data"] for event in parse_sse_events(response) if event["event"] == "message"]
 
 
 def make_png_bytes() -> bytes:

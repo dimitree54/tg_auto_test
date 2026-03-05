@@ -1,3 +1,4 @@
+import { logUiEvent } from '../debug/logger';
 import { initCommandsPanel } from '../features/commands/panel';
 import { initFileStaging } from '../features/files/staging';
 import { handleStart } from '../flows/start';
@@ -7,6 +8,7 @@ import { getEls, showNotJoinedState } from '../ui/dom';
 import { initReplyKeyboard } from '../ui/keyboards_reply';
 
 export function initApp(): void {
+  logUiEvent('app_initialized');
   const hint = document.getElementById('buildHint');
   if (hint) hint.style.display = 'none';
 

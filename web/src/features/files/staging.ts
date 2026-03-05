@@ -1,3 +1,4 @@
+import { logUiEvent } from '../../debug/logger';
 import { appState, type StagedFile } from '../../state/app';
 import type { FileUploadType } from '../../types/api';
 import { getEls } from '../../ui/dom';
@@ -13,6 +14,7 @@ function detectFileType(file: File): FileUploadType {
 function stageFile(file: File): void {
   const localUrl = URL.createObjectURL(file);
   appState.stagedFiles.push({ file, type: detectFileType(file), localUrl });
+  logUiEvent('files_staged', { filename: file.name, size_bytes: file.size, kind: detectFileType(file) });
   renderStagedFiles();
 }
 
@@ -21,11 +23,15 @@ function unstageFile(index: number): void {
   if (!sf) return;
   URL.revokeObjectURL(sf.localUrl);
   appState.stagedFiles.splice(index, 1);
+  logUiEvent('files_unstaged', { filename: sf.file.name, kind: sf.type });
   renderStagedFiles();
 }
 
 export function clearStaged(): void {
   for (const sf of appState.stagedFiles) URL.revokeObjectURL(sf.localUrl);
+  if (appState.stagedFiles.length > 0) {
+    logUiEvent('files_unstaged', { count: appState.stagedFiles.length, mode: 'clear_all' });
+  }
   appState.stagedFiles = [];
   renderStagedFiles();
 }

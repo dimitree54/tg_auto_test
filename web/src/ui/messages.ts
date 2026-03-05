@@ -1,12 +1,9 @@
-import { payInvoice } from '../api/bot';
-import { appState } from '../state/app';
 import type { MessageResponse, MessageEntity } from '../types/api';
-import { errorMessage } from '../utils/errors';
 import { escapeHtml } from '../utils/escape';
 import { renderEntities } from '../utils/formatting';
-import { timeStr } from '../utils/time';
 
-import { getEls, setInputsDisabled } from './dom';
+import { getEls } from './dom';
+import { addInvoiceMessage } from './invoice';
 import { addInlineKeyboard } from './keyboards_inline';
 import { showReplyKeyboard } from './keyboards_reply';
 import { BubbleType, createBubble, findBubbleByMessageId, metaHtml, scrollBottom } from './messages_core';
@@ -17,7 +14,6 @@ import {
   addVideoNoteMessage,
 } from './messages_media';
 import { addPollMessage } from './poll';
-import { hideTyping, showTyping } from './typing';
 
 export function addTextMessage(text: string, type: BubbleType, entities?: MessageEntity[], messageId?: number): void {
   const els = getEls();
@@ -26,79 +22,6 @@ export function addTextMessage(text: string, type: BubbleType, entities?: Messag
     ? renderEntities(text, entities)
     : escapeHtml(text);
   el.innerHTML += `<span class="text">${content}</span>${metaHtml()}`;
-  els.messagesEl.appendChild(el);
-  scrollBottom();
-}
-
-function invoiceAmountLabel(currency: string, totalAmount: number): string {
-  if (currency === 'XTR') return `${totalAmount}${totalAmount === 1 ? ' Star' : ' Stars'}`;
-  return `${totalAmount} ${currency}`;
-}
-
-function addInvoiceMessage(data: MessageResponse, type: BubbleType): void {
-  const els = getEls();
-  const el = createBubble(type);
-  const card = document.createElement('div');
-  card.className = 'invoice-card';
-
-  const title = document.createElement('div');
-  title.className = 'invoice-title';
-  title.textContent = data.title || 'Invoice';
-  card.appendChild(title);
-
-  if (data.description) {
-    const desc = document.createElement('div');
-    desc.className = 'invoice-desc';
-    desc.textContent = data.description;
-    card.appendChild(desc);
-  }
-
-  const currency = data.currency || '';
-  const totalAmount = data.total_amount ?? 0;
-
-  const amount = document.createElement('div');
-  amount.className = 'invoice-amount';
-  amount.textContent = invoiceAmountLabel(currency, totalAmount);
-  card.appendChild(amount);
-
-  const payBtn = document.createElement('button');
-  payBtn.className = 'invoice-pay';
-  payBtn.textContent = `Pay ${invoiceAmountLabel(currency, totalAmount)}`;
-  payBtn.addEventListener('click', async () => {
-    if (appState.sending) return;
-    appState.sending = true;
-    setInputsDisabled(true);
-    payBtn.disabled = true;
-    payBtn.textContent = 'Paying...';
-    showTyping();
-    try {
-      let gotFirst = false;
-      await payInvoice(data.message_id, (msg) => {
-        if (!gotFirst) {
-          hideTyping();
-          gotFirst = true;
-        }
-        renderBotResponse(msg);
-      });
-      if (!gotFirst) hideTyping();
-      payBtn.textContent = 'Paid';
-    } catch (error) {
-      hideTyping();
-      payBtn.disabled = false;
-      payBtn.textContent = `Pay ${invoiceAmountLabel(currency, totalAmount)}`;
-      addTextMessage(`[Payment error: ${errorMessage(error)}]`, 'received');
-    }
-    appState.sending = false;
-    setInputsDisabled(false);
-    els.inputEl.focus();
-  });
-  card.appendChild(payBtn);
-
-  el.appendChild(card);
-  const meta = document.createElement('span');
-  meta.className = 'meta';
-  meta.textContent = timeStr();
-  el.appendChild(meta);
   els.messagesEl.appendChild(el);
   scrollBottom();
 }
@@ -151,7 +74,10 @@ export function renderBotResponse(data: MessageResponse): void {
   }
 
   if (data.type === 'invoice') {
-    addInvoiceMessage(data, 'received');
+    addInvoiceMessage(data, 'received', {
+      onErrorText: (text) => addTextMessage(text, 'received'),
+      onResponse: renderBotResponse,
+    });
     return;
   }
 

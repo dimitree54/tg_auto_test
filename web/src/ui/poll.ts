@@ -1,4 +1,6 @@
 import { votePoll } from '../api/bot';
+import { failUiTrace, finishUiTrace, startUiTrace } from '../debug/logger';
+import { createStreamCallbacks } from '../debug/stream';
 import type { MessageResponse } from '../types/api';
 import { errorMessage } from '../utils/errors';
 import { timeStr } from '../utils/time';
@@ -59,24 +61,26 @@ export function addPollMessage(data: MessageResponse, type: BubbleType): void {
 }
 
 async function handlePollVote(messageId: number, optionIds: number[]): Promise<void> {
+  const trace = startUiTrace('poll_vote_submitted', { message_id: messageId, option_ids: optionIds });
   try {
     setInputsDisabled(true);
     showTyping();
 
-    let gotFirst = false;
-    await votePoll(messageId, optionIds, (msg) => {
-      if (!gotFirst) {
+    await votePoll(
+      messageId,
+      optionIds,
+      trace.id,
+      createStreamCallbacks(trace.id, (msg) => {
         hideTyping();
-        gotFirst = true;
-      }
-      if (msg.text) {
-        addTextMessage(msg.text, 'received');
-      }
-    });
-    if (!gotFirst) hideTyping();
+        if (msg.text) addTextMessage(msg.text, 'received');
+      }),
+    );
+    hideTyping();
+    finishUiTrace(trace, { status: 'ok' });
   } catch (error) {
     hideTyping();
-    errorMessage(`Poll vote failed: ${String(error)}`);
+    addTextMessage(`[Poll vote failed: ${errorMessage(error)}]`, 'received');
+    failUiTrace(trace, error, { message_id: messageId });
   } finally {
     setInputsDisabled(false);
   }

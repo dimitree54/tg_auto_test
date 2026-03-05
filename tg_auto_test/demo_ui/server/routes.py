@@ -17,17 +17,17 @@ from tg_auto_test.demo_ui.server.api_models import (
     BotStateResponse,
     CallbackRequest,
     InvoicePayRequest,
-    MessageResponse,
     PollVoteRequest,
     TextMessageRequest,
 )
 from tg_auto_test.demo_ui.server.file_store import build_file_response
-from tg_auto_test.demo_ui.server.routes_interactive import (
-    handle_callback as handle_callback_interactive,
-    stream_pay_invoice,
-    stream_poll_vote,
+from tg_auto_test.demo_ui.server.serverless_route_actions import (
+    stream_callback_action,
+    stream_file_action,
+    stream_payment_action,
+    stream_poll_action,
+    stream_text_action,
 )
-from tg_auto_test.demo_ui.server.streaming_handler import stream_file_message, stream_text_message
 from tg_auto_test.test_utils.exceptions import BotNoResponseError
 
 if TYPE_CHECKING:
@@ -76,39 +76,36 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
         return response
 
     @app.post("/api/message")
-    async def send_message(req: TextMessageRequest) -> StreamingResponse:
-        return stream_text_message(demo_server, req.text)
+    async def send_message(req: TextMessageRequest, request: Request) -> StreamingResponse:
+        return stream_text_action(demo_server, request, req.text)
 
     @app.post("/api/document")
-    async def send_document(file: UploadFile) -> StreamingResponse:
+    async def send_document(file: UploadFile, request: Request) -> StreamingResponse:
         data = await file.read()
-        return stream_file_message(demo_server, data, force_document=True)
+        return stream_file_action(demo_server, request, data, force_document=True)
 
     @app.post("/api/voice")
-    async def send_voice(file: UploadFile) -> StreamingResponse:
+    async def send_voice(file: UploadFile, request: Request) -> StreamingResponse:
         data = await file.read()
-        return stream_file_message(demo_server, data, voice_note=True)
+        return stream_file_action(demo_server, request, data, voice_note=True)
 
     @app.post("/api/photo")
-    async def send_photo(file: UploadFile, caption: str = Form("")) -> StreamingResponse:
+    async def send_photo(file: UploadFile, request: Request, caption: str = Form("")) -> StreamingResponse:
         data = await file.read()
-        return stream_file_message(demo_server, data, caption=caption)
+        return stream_file_action(demo_server, request, data, caption=caption)
 
     @app.post("/api/video_note")
-    async def send_video_note(file: UploadFile) -> StreamingResponse:
+    async def send_video_note(file: UploadFile, request: Request) -> StreamingResponse:
         data = await file.read()
-        return stream_file_message(demo_server, data, video_note=True)
+        return stream_file_action(demo_server, request, data, video_note=True)
 
     @app.post("/api/invoice/pay")
-    async def pay_invoice(req: InvoicePayRequest) -> StreamingResponse:
-        return stream_pay_invoice(demo_server, req)
+    async def pay_invoice(req: InvoicePayRequest, request: Request) -> StreamingResponse:
+        return stream_payment_action(demo_server, request, req.message_id)
 
     @app.post("/api/callback")
-    async def handle_callback(req: CallbackRequest) -> MessageResponse:
-        result = await handle_callback_interactive(demo_server, req)
-        if demo_server.on_action is not None:
-            await demo_server.on_action("click_button", demo_server.client)
-        return result
+    async def handle_callback(req: CallbackRequest, request: Request) -> StreamingResponse:
+        return stream_callback_action(demo_server, request, req.message_id, req.data)
 
     @app.post("/api/reset")
     async def reset() -> dict[str, str]:
@@ -126,5 +123,5 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
         return {"status": "ok"}
 
     @app.post("/api/poll/vote")
-    async def vote_poll(request: PollVoteRequest) -> StreamingResponse:
-        return stream_poll_vote(demo_server, request)
+    async def vote_poll(req: PollVoteRequest, request: Request) -> StreamingResponse:
+        return stream_poll_action(demo_server, request, req.message_id, req.option_ids)

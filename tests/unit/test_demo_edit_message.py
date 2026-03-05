@@ -115,7 +115,9 @@ def test_demo_api_callback_edit_returns_edit_flag() -> None:
             json={"message_id": original_msg_id, "data": "do_edit"},
         )
         assert resp.status_code == 200
-        edit_data = resp.json()
+        edit_messages = parse_sse_messages(resp)
+        assert len(edit_messages) >= 1
+        edit_data = edit_messages[0]
         assert edit_data["text"] == "Edited text"
 
         # BUG: the response should indicate this is an edit and preserve

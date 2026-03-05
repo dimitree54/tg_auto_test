@@ -1,4 +1,6 @@
 import { sendFile, sendMessage } from '../api/bot';
+import { failUiTrace, finishUiTrace, logUiEvent, startUiTrace } from '../debug/logger';
+import { createStreamCallbacks } from '../debug/stream';
 import { closeCommandPanel, refreshBotState } from '../features/commands/panel';
 import { consumeStagedFiles } from '../features/files/staging';
 import { appState } from '../state/app';
@@ -15,6 +17,12 @@ import {
 import { hideTyping, showTyping } from '../ui/typing';
 import { errorMessage } from '../utils/errors';
 
+async function refreshState(traceId: string): Promise<void> {
+  logUiEvent('state_refresh_started', {}, traceId);
+  await refreshBotState();
+  logUiEvent('state_refresh_completed', {}, traceId);
+}
+
 export async function sendTextMessage(
   text: string,
   opts?: { clearInput?: boolean },
@@ -30,36 +38,46 @@ export async function sendTextMessage(
 
   addTextMessage(text, 'sent');
   showTyping();
+  const trace = startUiTrace('send_text', { text });
   try {
-    let gotFirst = false;
-    await sendMessage(text, (msg) => {
-      if (!gotFirst) {
+    await sendMessage(
+      text,
+      trace.id,
+      createStreamCallbacks(trace.id, (msg) => {
         hideTyping();
-        gotFirst = true;
-      }
-      renderBotResponse(msg);
-    });
-    if (!gotFirst) hideTyping();
-    await refreshBotState();
+        renderBotResponse(msg);
+      }),
+    );
+    hideTyping();
+    await refreshState(trace.id);
+    finishUiTrace(trace, { status: 'ok' });
   } catch (error) {
     hideTyping();
     addTextMessage(`[${errorMessage(error)}]`, 'received');
+    failUiTrace(trace, error, { text });
   }
   appState.sending = false;
   setInputsDisabled(false);
   els.inputEl.focus();
 }
 
-async function sendFileToApi(file: File, fileType: FileUploadType, caption: string): Promise<void> {
-  let gotFirst = false;
-  await sendFile(file, fileType, caption, (msg) => {
-    if (!gotFirst) {
+async function sendFileToApi(
+  file: File,
+  fileType: FileUploadType,
+  caption: string,
+  traceId: string,
+): Promise<void> {
+  await sendFile(
+    file,
+    fileType,
+    caption,
+    traceId,
+    createStreamCallbacks(traceId, (msg) => {
       hideTyping();
-      gotFirst = true;
-    }
-    renderBotResponse(msg);
-  });
-  if (!gotFirst) hideTyping();
+      renderBotResponse(msg);
+    }),
+  );
+  hideTyping();
 }
 
 export async function handleSend(): Promise<void> {
@@ -84,6 +102,12 @@ export async function handleSend(): Promise<void> {
 
   for (const [i, sf] of filesToSend.entries()) {
     const caption = i === 0 ? text : '';
+    const trace = startUiTrace('send_file', {
+      caption,
+      filename: sf.file.name,
+      kind: sf.type,
+      size_bytes: sf.file.size,
+    });
 
     switch (sf.type) {
       case 'photo': {
@@ -105,15 +129,17 @@ export async function handleSend(): Promise<void> {
 
     showTyping();
     try {
-      await sendFileToApi(sf.file, sf.type, caption);
+      await sendFileToApi(sf.file, sf.type, caption, trace.id);
+      finishUiTrace(trace, { status: 'ok' });
     } catch (error) {
       hideTyping();
       addTextMessage(`[${errorMessage(error)}]`, 'received');
+      failUiTrace(trace, error, { filename: sf.file.name });
     }
   }
 
   appState.sending = false;
   setInputsDisabled(false);
   els.inputEl.focus();
-  await refreshBotState();
+  await refreshState('send_file-post');
 }

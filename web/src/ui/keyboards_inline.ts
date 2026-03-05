@@ -1,4 +1,6 @@
 import { pressCallback } from '../api/bot';
+import { failUiTrace, finishUiTrace, startUiTrace } from '../debug/logger';
+import { createStreamCallbacks } from '../debug/stream';
 import { appState } from '../state/app';
 import type { InlineKeyboard, MessageResponse } from '../types/api';
 import { errorMessage } from '../utils/errors';
@@ -35,16 +37,26 @@ export function addInlineKeyboard(
         const allBtns = keyboard ? keyboard.querySelectorAll<HTMLButtonElement>('.ik-btn') : [];
         for (const b of allBtns) b.disabled = true;
 
+        const trace = startUiTrace('callback_clicked', { callback_data: cbData, message_id: msgId });
         appState.sending = true;
         setInputsDisabled(true);
         showTyping();
         try {
-          const data = await pressCallback(msgId, cbData);
+          await pressCallback(
+            msgId,
+            cbData,
+            trace.id,
+            createStreamCallbacks(trace.id, (data) => {
+              hideTyping();
+              onResponse(data);
+            }),
+          );
           hideTyping();
-          onResponse(data);
+          finishUiTrace(trace, { status: 'ok' });
         } catch (error) {
           hideTyping();
           onErrorMessage(`[Callback error: ${errorMessage(error)}]`);
+          failUiTrace(trace, error, { callback_data: cbData, message_id: msgId });
         }
         appState.sending = false;
         setInputsDisabled(false);

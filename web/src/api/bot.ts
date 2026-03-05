@@ -1,35 +1,58 @@
-import type { BotStateResponse, FileUploadType, MessageResponse } from '../types/api';
+import type { BotStateResponse, DemoTraceEvent, FileUploadType, MessageResponse } from '../types/api';
 
-import { getJson, postFormSSE, postJson, postJsonSSE, postNoBody } from './http';
+import { getJson, postFormSSE, postJsonSSE, postNoBody } from './http';
+
+interface TraceCallbacks {
+  onMessage: (msg: MessageResponse) => void;
+  onTrace: (event: DemoTraceEvent) => void;
+}
 
 export async function sendMessage(
   text: string,
-  onEvent: (msg: MessageResponse) => void,
+  traceId: string,
+  callbacks: TraceCallbacks,
 ): Promise<void> {
-  await postJsonSSE<MessageResponse>('/api/message', { text }, onEvent);
+  await postJsonSSE<MessageResponse>('/api/message', { text }, callbacks, { 'X-Demo-Trace-Id': traceId });
 }
 
 export async function sendFile(
   file: File,
   kind: FileUploadType,
   caption: string,
-  onEvent: (msg: MessageResponse) => void,
+  traceId: string,
+  callbacks: TraceCallbacks,
 ): Promise<void> {
   const form = new FormData();
   form.append('file', file);
   if (caption) form.append('caption', caption);
-  await postFormSSE<MessageResponse>(`/api/${kind}`, form, onEvent);
+  await postFormSSE<MessageResponse>(`/api/${kind}`, form, callbacks, { 'X-Demo-Trace-Id': traceId });
 }
 
-export async function pressCallback(messageId: number, data: string): Promise<MessageResponse> {
-  return await postJson<MessageResponse>('/api/callback', { message_id: messageId, data });
+export async function pressCallback(
+  messageId: number,
+  data: string,
+  traceId: string,
+  callbacks: TraceCallbacks,
+): Promise<void> {
+  await postJsonSSE<MessageResponse>(
+    '/api/callback',
+    { message_id: messageId, data },
+    callbacks,
+    { 'X-Demo-Trace-Id': traceId },
+  );
 }
 
 export async function payInvoice(
   messageId: number,
-  onEvent: (msg: MessageResponse) => void,
+  traceId: string,
+  callbacks: TraceCallbacks,
 ): Promise<void> {
-  await postJsonSSE<MessageResponse>('/api/invoice/pay', { message_id: messageId }, onEvent);
+  await postJsonSSE<MessageResponse>(
+    '/api/invoice/pay',
+    { message_id: messageId },
+    callbacks,
+    { 'X-Demo-Trace-Id': traceId },
+  );
 }
 
 export async function resetConversation(): Promise<{ status: string }> {
@@ -43,11 +66,13 @@ export async function getState(): Promise<BotStateResponse> {
 export async function votePoll(
   messageId: number,
   optionIds: number[],
-  onEvent: (msg: MessageResponse) => void,
+  traceId: string,
+  callbacks: TraceCallbacks,
 ): Promise<void> {
   await postJsonSSE<MessageResponse>(
     '/api/poll/vote',
     { message_id: messageId, option_ids: optionIds },
-    onEvent,
+    callbacks,
+    { 'X-Demo-Trace-Id': traceId },
   );
 }
