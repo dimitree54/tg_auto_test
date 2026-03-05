@@ -1,11 +1,12 @@
 """HTTP route handlers for the demo server."""
 
+from collections.abc import AsyncIterator
 from pathlib import Path
 import time
 from typing import TYPE_CHECKING, Any, cast  # noqa: TID251
 
 from fastapi import FastAPI, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 from telethon.tl.functions.bots import GetBotCommandsRequest, GetBotMenuButtonRequest
 from telethon.tl.types import (
     BotCommandScopeDefault,
@@ -22,13 +23,13 @@ from tg_auto_test.demo_ui.server.api_models import (
     TextMessageRequest,
 )
 from tg_auto_test.demo_ui.server.file_store import build_file_response
-from tg_auto_test.demo_ui.server.response_drain import drain_and_serialize
+from tg_auto_test.demo_ui.server.response_drain import drain_sse_events
 from tg_auto_test.demo_ui.server.routes_interactive import (
     handle_callback as handle_callback_interactive,
-    handle_pay_invoice,
-    handle_poll_vote,
+    stream_pay_invoice,
+    stream_poll_vote,
 )
-from tg_auto_test.demo_ui.server.upload_handlers import handle_file_upload
+from tg_auto_test.demo_ui.server.upload_handlers import stream_file_upload
 from tg_auto_test.test_utils.exceptions import BotNoResponseError
 
 if TYPE_CHECKING:
@@ -77,58 +78,36 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
         return response
 
     @app.post("/api/message")
-    async def send_message(req: TextMessageRequest) -> list[MessageResponse]:
-        async with demo_server.client.conversation(demo_server.peer, timeout=demo_server.timeout) as conv:
-            await conv.send_message(req.text)
-            results = await drain_and_serialize(conv, demo_server.file_store)
+    async def send_message(req: TextMessageRequest) -> StreamingResponse:
+        async def _stream() -> AsyncIterator[str]:
+            async with demo_server.client.conversation(demo_server.peer, timeout=demo_server.timeout) as conv:
+                await conv.send_message(req.text)
+                async for chunk in drain_sse_events(conv, demo_server.file_store):
+                    yield chunk
+            if demo_server.on_action is not None:
+                await demo_server.on_action("send_message", demo_server.client)
 
-        if demo_server.on_action is not None:
-            await demo_server.on_action("send_message", demo_server.client)
-
-        return results
+        return StreamingResponse(_stream(), media_type="text/event-stream")
 
     @app.post("/api/document")
-    async def send_document(file: UploadFile) -> list[MessageResponse]:
-        results = await handle_file_upload(demo_server, file, force_document=True)
-
-        if demo_server.on_action is not None:
-            await demo_server.on_action("send_file", demo_server.client)
-
-        return results
+    async def send_document(file: UploadFile) -> StreamingResponse:
+        return await stream_file_upload(demo_server, file, force_document=True)
 
     @app.post("/api/voice")
-    async def send_voice(file: UploadFile) -> list[MessageResponse]:
-        results = await handle_file_upload(demo_server, file, voice_note=True)
-
-        if demo_server.on_action is not None:
-            await demo_server.on_action("send_file", demo_server.client)
-
-        return results
+    async def send_voice(file: UploadFile) -> StreamingResponse:
+        return await stream_file_upload(demo_server, file, voice_note=True)
 
     @app.post("/api/photo")
-    async def send_photo(file: UploadFile, caption: str = Form("")) -> list[MessageResponse]:
-        results = await handle_file_upload(demo_server, file, caption=caption)
-
-        if demo_server.on_action is not None:
-            await demo_server.on_action("send_file", demo_server.client)
-
-        return results
+    async def send_photo(file: UploadFile, caption: str = Form("")) -> StreamingResponse:
+        return await stream_file_upload(demo_server, file, caption=caption)
 
     @app.post("/api/video_note")
-    async def send_video_note(file: UploadFile) -> list[MessageResponse]:
-        results = await handle_file_upload(demo_server, file, video_note=True)
-
-        if demo_server.on_action is not None:
-            await demo_server.on_action("send_file", demo_server.client)
-
-        return results
+    async def send_video_note(file: UploadFile) -> StreamingResponse:
+        return await stream_file_upload(demo_server, file, video_note=True)
 
     @app.post("/api/invoice/pay")
-    async def pay_invoice(req: InvoicePayRequest) -> list[MessageResponse]:
-        results = await handle_pay_invoice(demo_server, req)
-        if demo_server.on_action is not None:
-            await demo_server.on_action("pay_stars", demo_server.client)
-        return results
+    async def pay_invoice(req: InvoicePayRequest) -> StreamingResponse:
+        return stream_pay_invoice(demo_server, req)
 
     @app.post("/api/callback")
     async def handle_callback(req: CallbackRequest) -> MessageResponse:
@@ -153,9 +132,5 @@ def register_routes(app: FastAPI, demo_server: "DemoServer", templates_dir: Path
         return {"status": "ok"}
 
     @app.post("/api/poll/vote")
-    async def vote_poll(request: PollVoteRequest) -> list[MessageResponse]:
-        """Handle poll vote by calling Telethon SendVoteRequest."""
-        results = await handle_poll_vote(demo_server, request)
-        if demo_server.on_action is not None:
-            await demo_server.on_action("poll_vote", demo_server.client)
-        return results
+    async def vote_poll(request: PollVoteRequest) -> StreamingResponse:
+        return stream_poll_vote(demo_server, request)

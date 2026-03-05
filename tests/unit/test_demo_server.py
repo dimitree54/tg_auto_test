@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock  # noqa: TID251
 from fastapi.testclient import TestClient
 import pytest
 
+from tests.unit.sse_helpers import parse_sse_messages
 from tg_auto_test.demo_ui.server.demo_server import DemoClientProtocol, DemoServer, create_demo_app
 from tg_auto_test.demo_ui.server.file_store import FileStore
 from tg_auto_test.test_utils.models import ReplyMarkup, ServerlessMessage
@@ -105,8 +106,8 @@ def test_poll_vote_endpoint() -> None:
         response = client.post("/api/poll/vote", json={"message_id": 123, "option_ids": [0]})
 
     assert response.status_code == 200
-    messages = response.json()
-    assert isinstance(messages, list)
+    messages = parse_sse_messages(response)
+    assert len(messages) >= 1
     data = messages[0]
     assert data["type"] == "text"
     assert data["text"] == "You voted for: Red"
@@ -149,8 +150,8 @@ def test_photo_endpoint_returns_text_response_when_bot_replies_with_text() -> No
         )
 
     assert response.status_code == 200
-    messages = response.json()
-    assert isinstance(messages, list)
+    messages = parse_sse_messages(response)
+    assert len(messages) >= 1
     data = messages[0]
     assert data["type"] == "text"
     assert data["text"] == "I got your photo!"

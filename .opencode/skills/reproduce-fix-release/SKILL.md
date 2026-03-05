@@ -8,4 +8,5 @@ description: Pipeline of TDD bug fixing
 3. Read repo docs and contribution guides
 4. Fix the bug (following repo docs and contribution guides). Note: you are making not a hot-fix but a proper fix. Investigate the root cause of the bug. If some refactoring is needed for a proper fix - do it. Only a proper fix of the root cause is allowed. No hot-fixes, no hiding errors, no fallbacks. Only proper fix!
 5. Make sure that the reproducing test became green
-6. Use gh to create a new release with the fix
+6. Explore all repo docs and contribution guides. Make sure that your fix is fully compliant. If needed, update docs to be up-to-date.
+7. Use gh to create a new release with the fix

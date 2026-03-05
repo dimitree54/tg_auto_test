@@ -27,6 +27,7 @@ from telegram.ext import (
     ContextTypes,
 )
 
+from tests.unit.sse_helpers import parse_sse_messages
 from tg_auto_test.demo_ui.server.demo_server import DemoClientProtocol, DemoServer
 from tg_auto_test.test_utils.serverless_telegram_client import ServerlessTelegramClient
 
@@ -101,8 +102,8 @@ def test_demo_api_callback_edit_returns_edit_flag() -> None:
         # Step 1: send /menu to get inline keyboard
         resp = http.post("/api/message", json={"text": "/menu"})
         assert resp.status_code == 200
-        messages = resp.json()
-        assert isinstance(messages, list)
+        messages = parse_sse_messages(resp)
+        assert len(messages) >= 1
         menu_data = messages[0]
         assert menu_data["text"] == "Original text"
         original_msg_id = menu_data["message_id"]

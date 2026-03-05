@@ -10,7 +10,7 @@ import {
   addPhotoMessage,
   addTextMessage,
   addVideoNoteMessage,
-  renderBotResponses,
+  renderBotResponse,
 } from '../ui/messages';
 import { hideTyping, showTyping } from '../ui/typing';
 import { errorMessage } from '../utils/errors';
@@ -31,9 +31,15 @@ export async function sendTextMessage(
   addTextMessage(text, 'sent');
   showTyping();
   try {
-    const data = await sendMessage(text);
-    hideTyping();
-    renderBotResponses(data);
+    let gotFirst = false;
+    await sendMessage(text, (msg) => {
+      if (!gotFirst) {
+        hideTyping();
+        gotFirst = true;
+      }
+      renderBotResponse(msg);
+    });
+    if (!gotFirst) hideTyping();
     await refreshBotState();
   } catch (error) {
     hideTyping();
@@ -45,8 +51,15 @@ export async function sendTextMessage(
 }
 
 async function sendFileToApi(file: File, fileType: FileUploadType, caption: string): Promise<void> {
-  const data = await sendFile(file, fileType, caption);
-  renderBotResponses(data);
+  let gotFirst = false;
+  await sendFile(file, fileType, caption, (msg) => {
+    if (!gotFirst) {
+      hideTyping();
+      gotFirst = true;
+    }
+    renderBotResponse(msg);
+  });
+  if (!gotFirst) hideTyping();
 }
 
 export async function handleSend(): Promise<void> {
@@ -75,17 +88,14 @@ export async function handleSend(): Promise<void> {
     switch (sf.type) {
       case 'photo': {
         addPhotoMessage(sf.localUrl, 'sent', caption);
-
         break;
       }
       case 'voice': {
         addAudioMessage(sf.localUrl, 'sent', caption);
-
         break;
       }
       case 'video_note': {
         addVideoNoteMessage(sf.localUrl, 'sent', caption);
-
         break;
       }
       default: {
@@ -96,7 +106,6 @@ export async function handleSend(): Promise<void> {
     showTyping();
     try {
       await sendFileToApi(sf.file, sf.type, caption);
-      hideTyping();
     } catch (error) {
       hideTyping();
       addTextMessage(`[${errorMessage(error)}]`, 'received');

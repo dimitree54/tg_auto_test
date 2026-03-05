@@ -72,10 +72,16 @@ function addInvoiceMessage(data: MessageResponse, type: BubbleType): void {
     payBtn.textContent = 'Paying...';
     showTyping();
     try {
-      const respData = await payInvoice(data.message_id);
-      hideTyping();
+      let gotFirst = false;
+      await payInvoice(data.message_id, (msg) => {
+        if (!gotFirst) {
+          hideTyping();
+          gotFirst = true;
+        }
+        renderBotResponse(msg);
+      });
+      if (!gotFirst) hideTyping();
       payBtn.textContent = 'Paid';
-      renderBotResponses(respData);
     } catch (error) {
       hideTyping();
       payBtn.disabled = false;
@@ -112,12 +118,6 @@ function updateBubbleInPlace(existing: HTMLDivElement, data: MessageResponse): v
   }
 
   scrollBottom();
-}
-
-export function renderBotResponses(responses: MessageResponse[]): void {
-  for (const data of responses) {
-    renderBotResponse(data);
-  }
 }
 
 export function renderBotResponse(data: MessageResponse): void {

@@ -10,7 +10,6 @@ import { hideTyping, showTyping } from './typing';
 type BubbleType = 'sent' | 'received';
 
 
-
 function scrollBottom(): void {
   const els = getEls();
   els.messagesEl.scrollTop = els.messagesEl.scrollHeight;
@@ -29,7 +28,6 @@ export function addPollMessage(data: MessageResponse, type: BubbleType): void {
   const els = getEls();
   const el = createBubble(type);
 
-  // Add poll question as heading
   if (data.poll_question) {
     const questionEl = document.createElement('h4');
     questionEl.className = 'poll-question';
@@ -37,7 +35,6 @@ export function addPollMessage(data: MessageResponse, type: BubbleType): void {
     el.appendChild(questionEl);
   }
 
-  // Add poll options as clickable buttons
   if (data.poll_options && data.message_id) {
     const optionsEl = document.createElement('div');
     optionsEl.className = 'poll-options';
@@ -62,25 +59,25 @@ export function addPollMessage(data: MessageResponse, type: BubbleType): void {
 }
 
 async function handlePollVote(messageId: number, optionIds: number[]): Promise<void> {
-  
   try {
     setInputsDisabled(true);
     showTyping();
 
-    // Call the API to vote
-    const responses = await votePoll(messageId, optionIds);
-
-    // Show all bot responses as text messages
-    for (const response of responses) {
-      if (response.text) {
-        addTextMessage(response.text, 'received');
+    let gotFirst = false;
+    await votePoll(messageId, optionIds, (msg) => {
+      if (!gotFirst) {
+        hideTyping();
+        gotFirst = true;
       }
-    }
-
+      if (msg.text) {
+        addTextMessage(msg.text, 'received');
+      }
+    });
+    if (!gotFirst) hideTyping();
   } catch (error) {
+    hideTyping();
     errorMessage(`Poll vote failed: ${String(error)}`);
   } finally {
-    hideTyping();
     setInputsDisabled(false);
   }
 }
