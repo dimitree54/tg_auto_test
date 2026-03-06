@@ -20,6 +20,8 @@ class ConversationClient(Protocol):
 
     def _pop_response(self) -> ServerlessMessage: ...
 
+    def _pop_edit(self) -> ServerlessMessage: ...
+
     async def _process_callback_query(self, message_id: int, data: str) -> ServerlessMessage: ...
 
 
@@ -69,7 +71,11 @@ class ServerlessTelegramConversation:
         raise NotImplementedError("get_reply() not supported in serverless mode")
 
     async def get_edit(self, message: object = None, *, timeout: float | None = None) -> ServerlessMessage:
-        raise NotImplementedError("get_edit() not supported in serverless mode")
+        if message is not None:
+            raise NotImplementedError("message parameter not supported in serverless mode")
+        if timeout is not None:
+            raise NotImplementedError("timeout parameter not supported in serverless mode")
+        return self._client._pop_edit()  # noqa: SLF001
 
     def cancel(self) -> None:
         raise NotImplementedError("cancel() is not supported in serverless testing mode")

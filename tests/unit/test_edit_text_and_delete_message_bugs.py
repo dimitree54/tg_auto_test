@@ -67,13 +67,11 @@ def _build_delete_app(builder: ApplicationBuilder) -> Application:
 
 
 @pytest.mark.asyncio
-async def test_edit_text_response_has_edited_text() -> None:
-    """conv.get_response() must return the edited text, not the original.
+async def test_edit_text_get_response_returns_original() -> None:
+    """conv.get_response() returns the original sendMessage, and get_edit() returns the edit.
 
-    Currently fails: get_response() returns "Loading..." because the
-    outbox contains two entries (sendMessage + editMessageText) and
-    popleft() returns the first one.  The edited "Done!" text is only
-    reachable as a second outbox entry.
+    Matches real Telethon behavior: get_response() waits for sendMessage events,
+    get_edit() waits for editMessageText events — they are separate queues.
     """
     client = ServerlessTelegramClient(build_application=_build_edit_app)
     await client.connect()
@@ -81,11 +79,10 @@ async def test_edit_text_response_has_edited_text() -> None:
         async with client.conversation("test_bot") as conv:
             await conv.send_message("/edit")
             msg = await conv.get_response()
-            assert msg.text == "Done!", (
-                f"Expected edited text 'Done!' but got '{msg.text}'. "
-                "The edit was appended as a separate outbox entry "
-                "instead of replacing the original message."
-            )
+            assert msg.text == "Loading..."
+            edited = await conv.get_edit()
+            assert edited.text == "Done!"
+            assert edited.id == msg.id
     finally:
         await client.disconnect()
 

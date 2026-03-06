@@ -60,6 +60,7 @@ async def process_complete_file_message(
 ) -> object:
     """Complete file message processing for the client."""
     client._outbox.clear()  # noqa: SLF001
+    client._edit_outbox.clear()  # noqa: SLF001
     file_id = client._helpers.make_file_id()  # noqa: SLF001
     file_bytes, fname, _ct, file_data = process_file_message_data(
         file, caption=caption, force_document=force_document, voice_note=voice_note, video_note=video_note
@@ -113,6 +114,13 @@ def pop_client_response(client: object) -> object:
     if not client._outbox:
         raise RuntimeError("No pending response. Call send_message() first.")  # noqa: SLF001
     return client._outbox.popleft()  # noqa: SLF001
+
+
+def pop_client_edit(client: object) -> object:
+    """Pop edit from client edit outbox."""
+    if not client._edit_outbox:  # noqa: SLF001
+        raise RuntimeError("No pending edit. The bot has not edited any message.")
+    return client._edit_outbox.popleft()  # noqa: SLF001
 
 
 async def connect_client(client: object) -> None:

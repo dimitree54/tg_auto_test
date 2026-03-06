@@ -42,7 +42,7 @@ class ServerlessUpdateProcessor:
             )
         for resp in responses:
             if resp._is_edit:  # noqa: SLF001
-                _replace_edited_message(client._outbox, resp)  # noqa: SLF001
+                client._edit_outbox.append(resp)  # noqa: SLF001
             else:
                 client._outbox.append(resp)  # noqa: SLF001
         _apply_deletions(new_calls, client._outbox)  # noqa: SLF001
@@ -63,12 +63,3 @@ def _apply_deletions(
                 break
 
 
-def _replace_edited_message(
-    outbox: deque[ServerlessMessage],
-    edited: ServerlessMessage,
-) -> None:
-    for i, existing in enumerate(outbox):
-        if existing.id == edited.id:
-            outbox[i] = edited
-            return
-    outbox.append(edited)
