@@ -10,6 +10,7 @@ from tg_auto_test.test_utils.file_processing_utils import (
     disconnect_client,
     handle_click_wrapper,
     handle_send_vote_request_for_client_wrapper,
+    pop_client_edit,
     pop_client_response,
     process_complete_file_message,
     simulate_stars_payment_wrapper,
@@ -18,6 +19,7 @@ from tg_auto_test.test_utils.json_types import JsonValue
 from tg_auto_test.test_utils.models import ServerlessMessage, TelegramApiCall
 from tg_auto_test.test_utils.poll_vote_handler import PollTracker, create_callback_query_payload
 from tg_auto_test.test_utils.ptb_types import BuildApplication
+from tg_auto_test.test_utils.serverless_bot_callback_answer import ServerlessBotCallbackAnswer
 from tg_auto_test.test_utils.serverless_client_helpers import ServerlessClientHelpers
 from tg_auto_test.test_utils.serverless_client_public_api import ServerlessClientPublicAPI
 from tg_auto_test.test_utils.serverless_stars_payment import StarsPaymentHandler
@@ -44,6 +46,7 @@ class ServerlessTelegramClientCore(ServerlessClientPublicAPI):
         self._helpers = ServerlessClientHelpers(user_id, first_name)
         self._connected = False
         self._outbox: deque[ServerlessMessage] = deque()
+        self._edit_outbox: deque[ServerlessMessage] = deque()
         self._stars_balance = 100
         self._invoices: dict[int, dict[str, str | int | list[LabeledPrice]]] = {}
         self._poll_tracker = PollTracker()
@@ -72,8 +75,12 @@ class ServerlessTelegramClientCore(ServerlessClientPublicAPI):
     def _pop_response(self) -> ServerlessMessage:
         return pop_client_response(self)  # type: ignore
 
+    def _pop_edit(self) -> ServerlessMessage:
+        return pop_client_edit(self)  # type: ignore
+
     async def _process_text_message(self, text: str) -> ServerlessMessage:
         self._outbox.clear()
+        self._edit_outbox.clear()
         payload, msg = self._helpers.base_message_update(self._chat_id)
         msg["text"] = text
         if text.startswith("/"):
@@ -109,7 +116,7 @@ class ServerlessTelegramClientCore(ServerlessClientPublicAPI):
     async def _process_message_update(self, payload: dict[str, JsonValue]) -> ServerlessMessage:
         return await self._update_processor.process_message_update(self, payload)
 
-    async def _handle_click(self, message_id: int, data: str) -> ServerlessMessage:
+    async def _handle_click(self, message_id: int, data: str) -> ServerlessBotCallbackAnswer:
         return await handle_click_wrapper(self, message_id, data)  # type: ignore
 
     async def _simulate_stars_payment(self, invoice_message_id: int) -> None:

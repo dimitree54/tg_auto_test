@@ -2,11 +2,13 @@
 
 from pathlib import Path
 
+from tg_auto_test.test_utils.exceptions import BotNoResponseError
 from tg_auto_test.test_utils.file_message_builder import build_file_payload
 from tg_auto_test.test_utils.json_types import JsonValue
 from tg_auto_test.test_utils.media_types import detect_content_type
 from tg_auto_test.test_utils.models import FileData
 from tg_auto_test.test_utils.poll_vote_handler import handle_send_vote_request_for_client
+from tg_auto_test.test_utils.serverless_bot_callback_answer import ServerlessBotCallbackAnswer
 
 
 def process_file_message_data(
@@ -60,6 +62,7 @@ async def process_complete_file_message(
 ) -> object:
     """Complete file message processing for the client."""
     client._outbox.clear()  # noqa: SLF001
+    client._edit_outbox.clear()  # noqa: SLF001
     file_id = client._helpers.make_file_id()  # noqa: SLF001
     file_bytes, fname, _ct, file_data = process_file_message_data(
         file, caption=caption, force_document=force_document, voice_note=voice_note, video_note=video_note
@@ -99,13 +102,26 @@ async def simulate_stars_payment_wrapper(client: object, invoice_message_id: int
     )
 
 
-async def handle_click_wrapper(client: object, message_id: int, data: str) -> object:
-    """Handle click for the client."""
-    outbox_before = len(client._outbox)  # noqa: SLF001
-    result = await client._process_callback_query(message_id, data)  # noqa: SLF001
-    while len(client._outbox) > outbox_before:  # noqa: SLF001
-        client._outbox.pop()  # noqa: SLF001
-    return result
+async def handle_click_wrapper(client: object, message_id: int, data: str) -> ServerlessBotCallbackAnswer:
+    """Handle click for the client, returning a BotCallbackAnswer-like object.
+
+    Bot responses remain in the outbox for ``conv.get_response()``.
+    """
+    calls_before = len(client._request.calls)  # noqa: SLF001
+    try:
+        await client._process_callback_query(message_id, data)  # noqa: SLF001
+    except BotNoResponseError:
+        pass  # Callback handlers may only call answer() without sending messages
+    answer_text = _extract_callback_answer_text(client._request.calls[calls_before:])  # noqa: SLF001
+    return ServerlessBotCallbackAnswer(message=answer_text)
+
+
+def _extract_callback_answer_text(calls: list[object]) -> str:
+    """Extract the text from an answerCallbackQuery call, if any."""
+    for call in calls:
+        if call.api_method == "answerCallbackQuery":  # type: ignore[union-attr]
+            return call.parameters.get("text", "")  # type: ignore[union-attr]
+    return ""
 
 
 def pop_client_response(client: object) -> object:
@@ -113,6 +129,13 @@ def pop_client_response(client: object) -> object:
     if not client._outbox:
         raise RuntimeError("No pending response. Call send_message() first.")  # noqa: SLF001
     return client._outbox.popleft()  # noqa: SLF001
+
+
+def pop_client_edit(client: object) -> object:
+    """Pop edited message from client edit outbox."""
+    if not client._edit_outbox:
+        raise RuntimeError("No pending edit. The bot did not edit any message.")  # noqa: SLF001
+    return client._edit_outbox.popleft()  # noqa: SLF001
 
 
 async def connect_client(client: object) -> None:

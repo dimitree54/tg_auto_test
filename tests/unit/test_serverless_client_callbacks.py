@@ -11,12 +11,11 @@ from tg_auto_test.test_utils.serverless_telegram_client import ServerlessTelegra
 
 @pytest.mark.asyncio
 async def test_inline_button_click() -> None:
-    """Test clicking inline buttons and receiving callback responses."""
+    """Test clicking inline buttons and receiving callback responses via get_response()."""
     client = ServerlessTelegramClient(build_application=build_test_application)
     await client.connect()
     try:
         async with client.conversation("test_bot") as conv:
-            # Send command to get inline keyboard
             await conv.send_message("/inline")
             msg_with_buttons = await conv.get_response()
 
@@ -24,8 +23,8 @@ async def test_inline_button_click() -> None:
             assert msg_with_buttons.buttons is not None
             assert msg_with_buttons.button_count == 2
 
-            # Click the first button (Option A)
-            response_msg = await msg_with_buttons.click(data=b"opt_a")
+            await msg_with_buttons.click(data=b"opt_a")
+            response_msg = await conv.get_response()
 
             assert response_msg.text == "You chose: opt_a"
             assert isinstance(response_msg.id, int)
@@ -41,20 +40,18 @@ async def test_different_callback_data() -> None:
     await client.connect()
     try:
         async with client.conversation("test_bot") as conv:
-            # Get inline keyboard
             await conv.send_message("/inline")
             msg_with_buttons = await conv.get_response()
 
-            # Click Option A
-            response_a = await msg_with_buttons.click(data=b"opt_a")
+            await msg_with_buttons.click(data=b"opt_a")
+            response_a = await conv.get_response()
             assert response_a.text == "You chose: opt_a"
 
-            # Get keyboard again
             await conv.send_message("/inline")
             msg_with_buttons2 = await conv.get_response()
 
-            # Click Option B
-            response_b = await msg_with_buttons2.click(data=b"opt_b")
+            await msg_with_buttons2.click(data=b"opt_b")
+            response_b = await conv.get_response()
             assert response_b.text == "You chose: opt_b"
     finally:
         await client.disconnect()
@@ -70,11 +67,11 @@ async def test_click_via_get_messages() -> None:
             await conv.send_message("/inline")
             msg_with_buttons = await conv.get_response()
 
-            # Use Telethon pattern: get message, then click
             message = await client.get_messages("test_bot", ids=msg_with_buttons.id)
             assert message is not None
-            message = cast(ServerlessMessage, message)  # get_messages with single int returns single ServerlessMessage
-            response_msg = await message.click(data=b"opt_a")
+            message = cast(ServerlessMessage, message)
+            await message.click(data=b"opt_a")
+            response_msg = await conv.get_response()
 
             assert response_msg.text == "You chose: opt_a"
     finally:
@@ -88,18 +85,15 @@ async def test_click_on_message_without_buttons() -> None:
     await client.connect()
     try:
         async with client.conversation("test_bot") as conv:
-            # Send regular text message (no buttons)
             await conv.send_message("hello")
             msg = await conv.get_response()
 
             assert msg.buttons is None
             assert msg.text == "hello"
 
-            # Clicking should work and trigger the callback handler
-            # even though the message has no buttons
-            response = await msg.click(data=b"test_data")
+            await msg.click(data=b"test_data")
+            response = await conv.get_response()
 
-            # The callback handler should respond with the callback data
             assert "You chose: test_data" in response.text
     finally:
         await client.disconnect()
@@ -116,23 +110,21 @@ async def test_button_properties_match_click_data() -> None:
             msg = await conv.get_response()
 
             assert msg.buttons is not None
-            assert len(msg.buttons) == 1  # One row
+            assert len(msg.buttons) == 1
             row = msg.buttons[0]
-            assert len(row) == 2  # Two buttons
+            assert len(row) == 2
 
-            # Test clicking the callback_data from button properties
             btn_a, btn_b = row
 
-            # Click using the callback_data from button A
-            response = await msg.click(data=btn_a.data)
+            await msg.click(data=btn_a.data)
+            response = await conv.get_response()
             assert response.text == "You chose: opt_a"
 
-            # Get new keyboard message
             await conv.send_message("/inline")
             msg2 = await conv.get_response()
 
-            # Click using the callback_data from button B
-            response2 = await msg2.click(data=btn_b.data)
+            await msg2.click(data=btn_b.data)
+            response2 = await conv.get_response()
             assert response2.text == "You chose: opt_b"
     finally:
         await client.disconnect()

@@ -58,6 +58,10 @@ pretty_format
 CONSTRUCTOR_ID
 SUBCLASS_OF_ID
 ServerlessTelegramClient
+ServerlessBotCallbackAnswer
+alert  # BotCallbackAnswer field matching Telethon API
+has_url  # BotCallbackAnswer field matching Telethon API
+cache_time  # BotCallbackAnswer field matching Telethon API
 ServerlessClientAuthStubs
 ServerlessClientAdminStubs
 ServerlessClientIterStubs
