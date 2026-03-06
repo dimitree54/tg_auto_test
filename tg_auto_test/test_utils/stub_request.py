@@ -14,8 +14,7 @@ _FILE_PATH_PREFIX = "/file/bot"
 
 
 def _apply_parse_mode(parameters: dict[str, str], text_key: str = "text") -> tuple[str, list[dict[str, JsonValue]]]:
-    """Parse HTML/Markdown formatting when parse_mode is set."""
-    raw_text = parameters.get(text_key, "")
+    raw_text = parameters[text_key]
     parse_mode = parameters.get("parse_mode", "")
     if parse_mode.lower() == "html":
         return parse_html(raw_text)

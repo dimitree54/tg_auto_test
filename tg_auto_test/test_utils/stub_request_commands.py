@@ -60,7 +60,7 @@ class CommandMenuMixin:
 
     def _handle_edit_message_text(self: _CommandMenuHost, parameters: dict[str, str]) -> tuple[int, bytes]:
         msg: dict[str, JsonValue] = self._edit_message(parameters)
-        raw_text = parameters.get("text", "")
+        raw_text = parameters["text"]
         parse_mode = parameters.get("parse_mode", "")
         if parse_mode.lower() == "html":
             text, entities = parse_html(raw_text)

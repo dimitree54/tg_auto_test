@@ -28,8 +28,8 @@ def convert_entity(entity_dict: dict[str, JsonValue]) -> object | None:
     entity_type = entity_dict.get("type")
     if not isinstance(entity_type, str):
         return None
-    offset = int(entity_dict.get("offset", 0))
-    length = int(entity_dict.get("length", 0))
+    offset = int(entity_dict["offset"])
+    length = int(entity_dict["length"])
 
     simple_cls = _SIMPLE_ENTITY_TYPES.get(entity_type)
     if simple_cls is not None:

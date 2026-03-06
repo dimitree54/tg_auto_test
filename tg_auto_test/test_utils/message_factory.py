@@ -68,12 +68,13 @@ def _parse_reply_markup(parameters: dict[str, str]) -> ReplyMarkup | None:
 
 
 def _extract_entities_from_result(call: TelegramApiCall) -> list[object]:
-    """Extract and convert entities from the API response."""
     if not isinstance(call.result, dict):
-        return []
+        raise TypeError(f"{call.api_method} result must be a dict, got {type(call.result).__name__}")
     raw_entities = call.result.get("entities")
-    if not isinstance(raw_entities, list):
+    if raw_entities is None:
         return []
+    if not isinstance(raw_entities, list):
+        raise TypeError(f"{call.api_method} result 'entities' must be a list, got {type(raw_entities).__name__}")
     return convert_entities(raw_entities)
 
 
@@ -90,9 +91,9 @@ def _build_text_message(call: TelegramApiCall, message_id: int) -> ServerlessMes
 
 
 def _text_from_result(call: TelegramApiCall) -> str:
-    """Get the processed text from the API response (HTML-stripped when applicable)."""
-    if isinstance(call.result, dict):
-        result_text = call.result.get("text")
-        if isinstance(result_text, str):
-            return result_text
-    return call.parameters.get("text", "")
+    if not isinstance(call.result, dict):
+        raise TypeError(f"{call.api_method} result must be a dict, got {type(call.result).__name__}")
+    result_text = call.result.get("text")
+    if not isinstance(result_text, str):
+        raise ValueError(f"{call.api_method} result missing 'text' key (result keys: {list(call.result.keys())})")
+    return result_text
