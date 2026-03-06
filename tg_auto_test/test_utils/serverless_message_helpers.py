@@ -4,9 +4,10 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from tg_auto_test.test_utils.json_types import JsonValue
+from tg_auto_test.test_utils.serverless_bot_callback_answer import ServerlessBotCallbackAnswer
 
 ReplyMarkup = dict[str, JsonValue]
-ClickCallback = Callable[[int, str], Awaitable["ServerlessMessage"]]
+ClickCallback = Callable[[int, str], Awaitable[ServerlessBotCallbackAnswer]]
 
 
 @dataclass(frozen=True, slots=True)

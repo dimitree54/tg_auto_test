@@ -8,6 +8,7 @@ from tg_auto_test.test_utils.message_factory_invoice import labeled_prices_from_
 from tg_auto_test.test_utils.models import FileData, ServerlessMessage, TelegramApiCall
 
 if TYPE_CHECKING:
+    from tg_auto_test.test_utils.serverless_bot_callback_answer import ServerlessBotCallbackAnswer
     from tg_auto_test.test_utils.poll_vote_handler import PollTracker
 
 _MESSAGE_METHODS = frozenset({
@@ -30,7 +31,7 @@ def process_api_call(
     call: TelegramApiCall,
     file_store: dict[str, FileData],
     invoices: dict[int, dict[str, str | int | list[LabeledPrice]]],
-    click_callback: Callable[[int, str], Awaitable[ServerlessMessage]],
+    click_callback: Callable[[int, str], Awaitable["ServerlessBotCallbackAnswer"]],
     poll_tracker: "PollTracker | None" = None,
 ) -> ServerlessMessage:
     """Build a ``ServerlessMessage`` from an API call and register side-effects."""
@@ -64,7 +65,7 @@ def extract_responses(
     calls: list[TelegramApiCall],
     file_store: dict[str, FileData],
     invoices: dict[int, dict[str, str | int | list[LabeledPrice]]],
-    click_callback: Callable[[int, str], Awaitable[ServerlessMessage]],
+    click_callback: Callable[[int, str], Awaitable["ServerlessBotCallbackAnswer"]],
     poll_tracker: "PollTracker | None" = None,
 ) -> list[ServerlessMessage]:
     responses: list[ServerlessMessage] = []

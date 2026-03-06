@@ -16,6 +16,7 @@ from tg_auto_test.test_utils.file_processing_utils import (
 )
 from tg_auto_test.test_utils.json_types import JsonValue
 from tg_auto_test.test_utils.models import ServerlessMessage, TelegramApiCall
+from tg_auto_test.test_utils.serverless_bot_callback_answer import ServerlessBotCallbackAnswer
 from tg_auto_test.test_utils.poll_vote_handler import PollTracker, create_callback_query_payload
 from tg_auto_test.test_utils.ptb_types import BuildApplication
 from tg_auto_test.test_utils.serverless_client_helpers import ServerlessClientHelpers
@@ -109,8 +110,8 @@ class ServerlessTelegramClientCore(ServerlessClientPublicAPI):
     async def _process_message_update(self, payload: dict[str, JsonValue]) -> ServerlessMessage:
         return await self._update_processor.process_message_update(self, payload)
 
-    async def _handle_click(self, message_id: int, data: str) -> ServerlessMessage:
-        return await handle_click_wrapper(self, message_id, data)  # type: ignore
+    async def _handle_click(self, message_id: int, data: str) -> ServerlessBotCallbackAnswer:
+        return await handle_click_wrapper(self, message_id, data)
 
     async def _simulate_stars_payment(self, invoice_message_id: int) -> None:
         await simulate_stars_payment_wrapper(self, invoice_message_id)

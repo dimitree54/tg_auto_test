@@ -76,7 +76,9 @@ async def test_edit_message_preserves_message_id() -> None:
             original = await conv.get_response()
             original_id = original.id
 
-            edited = await original.click(data=b"do_edit")
+            await original.click(data=b"do_edit")
+            # Bot response (edit) is available via get_response(), matching Telethon behaviour
+            edited = await conv.get_response()
 
             assert edited.text == "Edited text"
             msg = (

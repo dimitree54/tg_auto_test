@@ -6,6 +6,7 @@ from telethon.tl.custom.file import File as TelethonFile
 from telethon.tl.types import Document, MessageMediaInvoice, Photo
 
 from tg_auto_test.test_utils.json_types import JsonValue
+from tg_auto_test.test_utils.serverless_bot_callback_answer import ServerlessBotCallbackAnswer
 from tg_auto_test.test_utils.serverless_message_helpers import (
     ClickCallback,
     FileData,
@@ -74,7 +75,7 @@ class ServerlessMessage(ServerlessMessageProperties):
         share_geo: object = None,
         password: str | None = None,
         open_url: bool | None = None,
-    ) -> "ServerlessMessage":
+    ) -> ServerlessBotCallbackAnswer:
         """Simulate pressing an inline button, matching Telethon's message.click signature.
 
         Delegates to the parent client's callback-query handler.
