@@ -72,4 +72,5 @@ def _replace_edited_message(
         if existing.id == edited.id:
             outbox[i] = edited
             return
-    outbox.append(edited)
+    # If the edited message is not in the outbox (already consumed by get_response()),
+    # do NOT append it — edits should not surface as new responses.
