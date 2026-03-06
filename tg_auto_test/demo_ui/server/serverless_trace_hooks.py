@@ -89,7 +89,6 @@ def _replace_message(outbox: object, message: ServerlessMessage) -> None:
         if existing.id == message.id:
             outbox[index] = message
             return
-    outbox.append(message)
 
 
 def _remove_message(outbox: object, message_id: int) -> None:
