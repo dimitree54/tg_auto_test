@@ -41,7 +41,6 @@ def _replace_edited_in_outbox(outbox: deque[ServerlessMessage], edited: Serverle
         if existing.id == edited.id:
             outbox[i] = edited
             return
-    outbox.append(edited)
 
 
 async def run_handler_streaming(

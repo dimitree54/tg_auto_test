@@ -72,4 +72,3 @@ def _replace_edited_message(
         if existing.id == edited.id:
             outbox[i] = edited
             return
-    outbox.append(edited)
