@@ -154,6 +154,10 @@ uv run pytest --cov=tg_auto_test
 - Unimplemented Telethon features raise `NotImplementedError`, never silent no-ops
 - Extra `_`-prefixed methods are allowed for test infrastructure
 
+## Releasing
+
+See [docs/RELEASE_WORKFLOW.md](docs/RELEASE_WORKFLOW.md) for the full release procedure, versioning policy, and troubleshooting.
+
 ## Getting help
 
 - Open an issue for bugs or feature requests
