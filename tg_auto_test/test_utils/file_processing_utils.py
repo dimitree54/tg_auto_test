@@ -139,14 +139,26 @@ def pop_client_edit(client: object) -> object:
 
 
 async def connect_client(client: object) -> None:
-    """Connect client if not already connected."""
+    """Connect client if not already connected.
+
+    Mirrors the PTB Application lifecycle: initialize() then post_init().
+    """
     if not client._connected:  # noqa: SLF001
-        await client._application.initialize()  # noqa: SLF001
+        app = client._application  # noqa: SLF001
+        await app.initialize()
+        if app.post_init is not None:
+            await app.post_init(app)
         client._connected = True  # noqa: SLF001
 
 
 async def disconnect_client(client: object) -> None:
-    """Disconnect client if connected."""
+    """Disconnect client if connected.
+
+    Mirrors the PTB Application lifecycle: shutdown() then post_shutdown().
+    """
     if client._connected:  # noqa: SLF001
-        await client._application.shutdown()  # noqa: SLF001
+        app = client._application  # noqa: SLF001
+        await app.shutdown()
+        if app.post_shutdown is not None:
+            await app.post_shutdown(app)
         client._connected = False  # noqa: SLF001
