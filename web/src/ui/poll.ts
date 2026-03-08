@@ -1,40 +1,26 @@
-import { votePoll } from '../api/bot';
-import { failUiTrace, finishUiTrace, startUiTrace } from '../debug/logger';
-import { createStreamCallbacks } from '../debug/stream';
 import type { MessageResponse } from '../types/api';
-import { errorMessage } from '../utils/errors';
 import { timeStr } from '../utils/time';
 
-import { getEls, setInputsDisabled } from './dom';
-import { addTextMessage } from './messages';
-import { hideTyping, showTyping } from './typing';
+import { getEls } from './dom';
+import { createBubble, scrollBottom } from './messages_core';
+import { handlePollVote } from './poll_vote';
 
 type BubbleType = 'sent' | 'received';
 
-
-function scrollBottom(): void {
-  const els = getEls();
-  els.messagesEl.scrollTop = els.messagesEl.scrollHeight;
-}
-
-function createBubble(type: BubbleType): HTMLDivElement {
-  const el = document.createElement('div');
-  el.className = `message ${type}`;
-  if (type === 'received') {
-    el.innerHTML = '<div class="sender">Bot</div>';
-  }
-  return el;
-}
-
 export function addPollMessage(data: MessageResponse, type: BubbleType): void {
   const els = getEls();
-  const el = createBubble(type);
+  const el = createBubble(type, data.message_id);
 
   if (data.poll_question) {
-    const questionEl = document.createElement('h4');
-    questionEl.className = 'poll-question';
-    questionEl.textContent = data.poll_question;
-    el.appendChild(questionEl);
+    const q = document.createElement('div');
+    q.className = 'poll-question';
+    q.textContent = data.poll_question;
+    el.appendChild(q);
+
+    const label = document.createElement('div');
+    label.className = 'poll-type-label';
+    label.textContent = 'Poll';
+    el.appendChild(label);
   }
 
   if (data.poll_options && data.message_id) {
@@ -42,11 +28,14 @@ export function addPollMessage(data: MessageResponse, type: BubbleType): void {
     optionsEl.className = 'poll-options';
 
     data.poll_options.forEach((option, index) => {
-      const button = document.createElement('button');
-      button.className = 'poll-option-btn';
-      button.textContent = option.text;
-      button.onclick = () => handlePollVote(data.message_id, [index]);
-      optionsEl.appendChild(button);
+      const row = document.createElement('div');
+      row.className = 'poll-option-row';
+      row.textContent = option.text;
+      row.onclick = () => {
+        showResults(el, data, index);
+        handlePollVote(data.message_id, [index]);
+      };
+      optionsEl.appendChild(row);
     });
 
     el.appendChild(optionsEl);
@@ -60,28 +49,50 @@ export function addPollMessage(data: MessageResponse, type: BubbleType): void {
   scrollBottom();
 }
 
-async function handlePollVote(messageId: number, optionIds: number[]): Promise<void> {
-  const trace = startUiTrace('poll_vote_submitted', { message_id: messageId, option_ids: optionIds });
-  try {
-    setInputsDisabled(true);
-    showTyping();
+function showResults(bubble: HTMLElement, data: MessageResponse, selectedIndex: number): void {
+  const container = bubble.querySelector('.poll-options');
+  if (!container || !data.poll_options) return;
 
-    await votePoll(
-      messageId,
-      optionIds,
-      trace.id,
-      createStreamCallbacks(trace.id, (msg) => {
-        hideTyping();
-        if (msg.text) addTextMessage(msg.text, 'received');
-      }),
-    );
-    hideTyping();
-    finishUiTrace(trace, { status: 'ok' });
-  } catch (error) {
-    hideTyping();
-    addTextMessage(`[Poll vote failed: ${errorMessage(error)}]`, 'received');
-    failUiTrace(trace, error, { message_id: messageId });
-  } finally {
-    setInputsDisabled(false);
-  }
+  container.innerHTML = '';
+  data.poll_options.forEach((option, i) => {
+    const isSelected = i === selectedIndex;
+    const percent = isSelected ? 100 : 0;
+
+    const row = document.createElement('div');
+    row.className = 'poll-result-row';
+
+    const header = document.createElement('div');
+    header.className = 'poll-result-header';
+
+    const marker = document.createElement('div');
+    marker.className = isSelected ? 'poll-check' : 'poll-dot';
+    if (isSelected) marker.textContent = '\u2713';
+    header.appendChild(marker);
+
+    const pctEl = document.createElement('span');
+    pctEl.className = 'poll-result-pct';
+    pctEl.textContent = `${percent}%`;
+    header.appendChild(pctEl);
+
+    const text = document.createElement('span');
+    text.className = 'poll-result-text';
+    text.textContent = option.text;
+    header.appendChild(text);
+
+    row.appendChild(header);
+
+    const track = document.createElement('div');
+    track.className = 'poll-result-bar-track';
+    const fill = document.createElement('div');
+    fill.className = 'poll-result-bar-fill';
+    fill.style.width = '0%';
+    track.appendChild(fill);
+    row.appendChild(track);
+
+    container.appendChild(row);
+
+    requestAnimationFrame(() => {
+      fill.style.width = `${percent}%`;
+    });
+  });
 }
