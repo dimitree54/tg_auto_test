@@ -47,10 +47,12 @@ class ConversationRuntime:
 
     def install(self) -> None:
         self._client._request.on_api_call = self.on_api_call
+        setattr(self._client, "_active_conversation_runtime", self)
         setattr(self._client, "_live_message_capture", True)
 
     def restore(self) -> None:
         self._client._request.on_api_call = self._previous_hook
+        setattr(self._client, "_active_conversation_runtime", None)
         setattr(self._client, "_live_message_capture", False)
         self.pending_tasks.clear()
 
@@ -102,8 +104,9 @@ class ConversationRuntime:
                 timeout=remaining,
                 return_when=asyncio.FIRST_COMPLETED,
             )
-            if queue_task in done:
-                message = pop_message_by_id(self._client._outbox, queue_task.result())
+            queue_result = self._finished_queue_result(queue_task)
+            if queue_result is not None:
+                message = pop_message_by_id(self._client._outbox, queue_result)
                 if message is not None:
                     return message
                 continue
@@ -144,8 +147,9 @@ class ConversationRuntime:
                 timeout=remaining,
                 return_when=asyncio.FIRST_COMPLETED,
             )
-            if queue_task in done:
-                return queue_task.result()
+            queue_result = self._finished_queue_result(queue_task)
+            if queue_result is not None:
+                return queue_result
             queue_task.cancel()
             try:
                 await queue_task
@@ -187,3 +191,9 @@ class ConversationRuntime:
             if message is not None:
                 return message
         return None
+
+    @staticmethod
+    def _finished_queue_result(queue_task: asyncio.Task[object]) -> object | None:
+        if queue_task.cancelled() or not queue_task.done():
+            return None
+        return queue_task.result()

@@ -1,5 +1,6 @@
 """File processing utilities without circular imports."""
 
+import asyncio
 from pathlib import Path
 
 from tg_auto_test.test_utils.exceptions import BotNoResponseError
@@ -81,7 +82,8 @@ async def handle_send_vote_request_for_client_wrapper(
 ) -> object:
     """Handle send vote request for the client."""
     del peer
-    return await handle_send_vote_request_for_client(
+    before_tasks = _snapshot_tasks()
+    response = await handle_send_vote_request_for_client(
         client._poll_tracker,
         client._helpers,
         client._process_message_update,  # noqa: SLF001
@@ -89,10 +91,13 @@ async def handle_send_vote_request_for_client_wrapper(
         message_id,
         option_bytes,  # noqa: SLF001
     )
+    _track_active_conversation_tasks(client, before_tasks)
+    return response
 
 
 async def simulate_stars_payment_wrapper(client: object, invoice_message_id: int) -> None:
     """Simulate stars payment for the client."""
+    before_tasks = _snapshot_tasks()
     client._stars_balance = await client._stars_payment_handler.simulate_payment(  # noqa: SLF001
         client,
         invoice_message_id,
@@ -100,6 +105,7 @@ async def simulate_stars_payment_wrapper(client: object, invoice_message_id: int
         client._stars_balance,
         client._helpers,  # noqa: SLF001
     )
+    _track_active_conversation_tasks(client, before_tasks)
 
 
 async def handle_click_wrapper(client: object, message_id: int, data: str) -> ServerlessBotCallbackAnswer:
@@ -107,11 +113,13 @@ async def handle_click_wrapper(client: object, message_id: int, data: str) -> Se
 
     Bot responses remain in the outbox for ``conv.get_response()``.
     """
+    before_tasks = _snapshot_tasks()
     calls_before = len(client._request.calls)  # noqa: SLF001
     try:
         await client._process_callback_query(message_id, data)  # noqa: SLF001
     except BotNoResponseError:
         pass  # Callback handlers may only call answer() without sending messages
+    _track_active_conversation_tasks(client, before_tasks)
     answer_text = _extract_callback_answer_text(client._request.calls[calls_before:])  # noqa: SLF001
     return ServerlessBotCallbackAnswer(message=answer_text)
 
@@ -129,6 +137,17 @@ def pop_client_response(client: object) -> object:
     if not client._outbox:
         raise RuntimeError("No pending response. Call send_message() first.")  # noqa: SLF001
     return client._outbox.popleft()  # noqa: SLF001
+
+
+def _snapshot_tasks() -> set[asyncio.Task[object]]:
+    current_task = asyncio.current_task()
+    return {task for task in asyncio.all_tasks() if task is not current_task and not task.done()}
+
+
+def _track_active_conversation_tasks(client: object, before_tasks: set[asyncio.Task[object]]) -> None:
+    runtime = getattr(client, "_active_conversation_runtime", None)
+    if runtime is not None:
+        runtime.finish_action(before_tasks)
 
 
 async def connect_client(client: object) -> None:

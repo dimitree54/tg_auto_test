@@ -3,8 +3,15 @@
 import asyncio
 
 import pytest
-from telegram import Update
-from telegram.ext import Application, ApplicationBuilder, ContextTypes, MessageHandler, filters
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import (
+    Application,
+    ApplicationBuilder,
+    CallbackQueryHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
 from tg_auto_test.test_utils.serverless_telegram_client import ServerlessTelegramClient
 
@@ -49,6 +56,35 @@ def _build_edit_app(builder: ApplicationBuilder) -> Application:
     return app
 
 
+async def _menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    del context
+    if not update.message:
+        return
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Save", callback_data="save")]])
+    await update.message.reply_text("Ready?", reply_markup=keyboard)
+
+
+async def _callback_follow_up_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    del context
+    query = update.callback_query
+    if not query or not query.message:
+        return
+    await query.answer()
+
+    async def _send_follow_up() -> None:
+        await asyncio.sleep(_DELAY_SECONDS)
+        await query.message.reply_text("Saved!")
+
+    asyncio.create_task(_send_follow_up())
+
+
+def _build_callback_follow_up_app(builder: ApplicationBuilder) -> Application:
+    app = builder.build()
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, _menu_handler))
+    app.add_handler(CallbackQueryHandler(_callback_follow_up_handler))
+    return app
+
+
 @pytest.mark.asyncio
 async def test_get_response_waits_for_delayed_follow_up() -> None:
     client = ServerlessTelegramClient(build_application=_build_follow_up_app)
@@ -76,5 +112,20 @@ async def test_get_edit_waits_for_delayed_edit() -> None:
             edited = await conv.get_edit()
             assert edited.id == status.id
             assert edited.text == "Done!"
+    finally:
+        await client.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_get_response_waits_for_delayed_callback_follow_up() -> None:
+    client = ServerlessTelegramClient(build_application=_build_callback_follow_up_app)
+    await client.connect()
+    try:
+        async with client.conversation("test_bot") as conv:
+            await conv.send_message("hello")
+            menu = await conv.get_response()
+            await menu.click(data=b"save")
+            follow_up = await conv.get_response()
+            assert follow_up.text == "Saved!"
     finally:
         await client.disconnect()
