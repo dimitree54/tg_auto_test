@@ -22,10 +22,10 @@ class ServerlessClientPublicAPI(ServerlessClientAuthStubs):
         exclusive: bool = True,
         replies_are_responses: bool = True,
     ) -> ServerlessTelegramConversation:
-        del entity, timeout
+        del entity
         if [total_timeout, max_messages, exclusive, replies_are_responses] != [None, 100, True, True]:
             raise NotImplementedError("Parameter not supported")
-        return ServerlessTelegramConversation(client=self)
+        return ServerlessTelegramConversation(client=self, timeout=timeout)
 
     async def send_message(
         self,

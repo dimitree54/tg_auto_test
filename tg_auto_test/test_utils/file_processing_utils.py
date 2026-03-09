@@ -131,13 +131,6 @@ def pop_client_response(client: object) -> object:
     return client._outbox.popleft()  # noqa: SLF001
 
 
-def pop_client_edit(client: object) -> object:
-    """Pop edited message from client edit outbox."""
-    if not client._edit_outbox:
-        raise RuntimeError("No pending edit. The bot did not edit any message.")  # noqa: SLF001
-    return client._edit_outbox.popleft()  # noqa: SLF001
-
-
 async def connect_client(client: object) -> None:
     """Connect client if not already connected.
 

@@ -40,6 +40,8 @@ class ServerlessUpdateProcessor:
             raise BotNoResponseError(
                 "Bot did not respond to the message. It may not have a handler for this message type."
             )
+        if getattr(client, "_live_message_capture", False):
+            return responses[-1]
         for resp in responses:
             if resp._is_edit:  # noqa: SLF001
                 _replace_edited_message(client._outbox, resp)  # noqa: SLF001

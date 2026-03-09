@@ -1,35 +1,17 @@
 from pathlib import Path
 from types import TracebackType
-from typing import Protocol
 
 from tg_auto_test.test_utils.models import ServerlessMessage
-
-
-class ConversationClient(Protocol):
-    async def _process_text_message(self, text: str) -> ServerlessMessage: ...
-
-    async def _process_file_message(
-        self,
-        file: Path | bytes,
-        *,
-        caption: str = "",
-        force_document: bool = False,
-        voice_note: bool = False,
-        video_note: bool = False,
-    ) -> ServerlessMessage: ...
-
-    def _pop_response(self) -> ServerlessMessage: ...
-
-    def _pop_edit(self) -> ServerlessMessage: ...
-
-    async def _process_callback_query(self, message_id: int, data: str) -> ServerlessMessage: ...
+from tg_auto_test.test_utils.serverless_conversation_runtime import ConversationClient, ConversationRuntime
 
 
 class ServerlessTelegramConversation:
-    def __init__(self, client: ConversationClient) -> None:
+    def __init__(self, client: ConversationClient, *, timeout: float = 60.0) -> None:
         self._client = client
+        self._runtime = ConversationRuntime(client, timeout=timeout)
 
     async def __aenter__(self) -> "ServerlessTelegramConversation":
+        self._runtime.install()
         return self
 
     async def __aexit__(
@@ -39,9 +21,19 @@ class ServerlessTelegramConversation:
         exc_tb: TracebackType | None,
     ) -> None:
         del exc_type, exc, exc_tb
+        self._runtime.restore()
 
     async def send_message(self, text: str) -> ServerlessMessage:
-        return await self._client._process_text_message(text)  # noqa: SLF001
+        before_tasks = self._runtime.begin_action()
+        payload, msg = self._client._helpers.base_message_update(self._client._chat_id)
+        msg["text"] = text
+        if text.startswith("/"):
+            msg["entities"] = [
+                {"offset": 0, "length": text.find(" ") if " " in text else len(text), "type": "bot_command"}
+            ]
+        await self._client._update_processor.process_update(self._client, payload)
+        self._runtime.finish_action(before_tasks)
+        return ServerlessMessage(id=int(msg["message_id"]), text=text)
 
     async def send_file(
         self,
@@ -52,20 +44,21 @@ class ServerlessTelegramConversation:
         voice_note: bool = False,
         video_note: bool = False,
     ) -> ServerlessMessage:
-        return await self._client._process_file_message(  # noqa: SLF001
+        before_tasks = self._runtime.begin_action()
+        result = await self._client._process_file_message(
             file,
             caption=caption,
             force_document=force_document,
             voice_note=voice_note,
             video_note=video_note,
         )
+        self._runtime.finish_action(before_tasks)
+        return result
 
     async def get_response(self, message: object = None, *, timeout: float | None = None) -> ServerlessMessage:
         if message is not None:
             raise NotImplementedError("message parameter not supported in serverless mode")
-        if timeout is not None:
-            raise NotImplementedError("timeout parameter not supported in serverless mode")
-        return self._client._pop_response()
+        return await self._runtime.get_response(timeout)
 
     async def get_reply(self, message: object = None, *, timeout: float | None = None) -> ServerlessMessage:
         raise NotImplementedError("get_reply() not supported in serverless mode")
@@ -73,9 +66,7 @@ class ServerlessTelegramConversation:
     async def get_edit(self, message: object = None, *, timeout: float | None = None) -> ServerlessMessage:
         if message is not None:
             raise NotImplementedError("message parameter not supported in serverless mode")
-        if timeout is not None:
-            raise NotImplementedError("timeout parameter not supported in serverless mode")
-        return self._client._pop_edit()
+        return await self._runtime.get_edit(timeout)
 
     def cancel(self) -> None:
         raise NotImplementedError("cancel() is not supported in serverless testing mode")
