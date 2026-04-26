@@ -36,3 +36,14 @@ async def test_send_message_allows_block_false_handler_to_reply_later() -> None:
             assert response.text == "Done!"
     finally:
         await client.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_client_send_message_waits_for_block_false_handler_reply() -> None:
+    client = ServerlessTelegramClient(build_application=_build_non_blocking_app)
+    await client.connect()
+    try:
+        response = await client.send_message(client._chat_id, "hello")  # noqa: SLF001
+        assert response.text == "Done!"
+    finally:
+        await client.disconnect()
