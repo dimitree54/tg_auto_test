@@ -8,9 +8,12 @@ from telethon.tl.types import Document, MessageMediaInvoice, Photo
 from tg_auto_test.test_utils.json_types import JsonValue
 from tg_auto_test.test_utils.serverless_bot_callback_answer import ServerlessBotCallbackAnswer
 from tg_auto_test.test_utils.serverless_message_helpers import (
+    ButtonFilter,
+    ButtonTextSelector,
     ClickCallback,
     FileData,
     ReplyMarkup,
+    resolve_click_data,
 )
 from tg_auto_test.test_utils.serverless_message_properties import ServerlessMessageProperties
 
@@ -68,8 +71,8 @@ class ServerlessMessage(ServerlessMessageProperties):
         i: int | None = None,
         j: int | None = None,
         *,
-        text: str | None = None,
-        filter: object = None,  # noqa: A002
+        text: ButtonTextSelector | None = None,
+        filter: ButtonFilter | None = None,  # noqa: A002
         data: bytes | None = None,
         share_phone: bool | None = None,
         share_geo: object = None,
@@ -84,15 +87,9 @@ class ServerlessMessage(ServerlessMessageProperties):
         if all(param is None for param in [i, j, text, filter, data, share_phone, share_geo, password, open_url]):
             raise ValueError("At least one parameter must be provided")
 
-        # Raise NotImplementedError for unsupported parameters
-        if i is not None:
-            raise NotImplementedError("i parameter not supported")
-        if j is not None:
-            raise NotImplementedError("j parameter not supported")
-        if text is not None:
-            raise NotImplementedError("text parameter not supported")
-        if filter is not None:
-            raise NotImplementedError("filter parameter not supported")
+        if data is None:
+            data = resolve_click_data(self.buttons, i=i, j=j, text=text, button_filter=filter)
+
         if share_phone is not None:
             raise NotImplementedError("share_phone parameter not supported")
         if share_geo is not None:
@@ -101,10 +98,6 @@ class ServerlessMessage(ServerlessMessageProperties):
             raise NotImplementedError("password parameter not supported")
         if open_url is not None:
             raise NotImplementedError("open_url parameter not supported")
-
-        # Only data parameter is supported
-        if data is None:
-            raise ValueError("data parameter is required when other parameters are not supported")
 
         if self._click_callback is None:
             raise RuntimeError("click() requires a client reference (_click_callback).")

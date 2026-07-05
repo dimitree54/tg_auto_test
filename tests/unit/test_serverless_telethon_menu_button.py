@@ -6,6 +6,37 @@ from telethon.tl import functions, types
 from tests.unit.helpers_ptb_app import build_test_application
 from tg_auto_test.test_utils.serverless_telegram_client import ServerlessTelegramClient
 
+MenuButton = types.BotMenuButtonDefault | types.BotMenuButtonCommands | types.BotMenuButton
+MenuButtonType = type[types.BotMenuButtonDefault] | type[types.BotMenuButtonCommands] | type[types.BotMenuButton]
+
+
+async def _set_menu_button(client: ServerlessTelegramClient, button: MenuButton) -> None:
+    request = functions.bots.SetBotMenuButtonRequest(user_id=types.InputUserSelf(), button=button)
+    result = await client(request)
+    assert result is True
+
+
+async def _get_menu_button(client: ServerlessTelegramClient) -> MenuButton:
+    request = functions.bots.GetBotMenuButtonRequest(user_id=types.InputUserSelf())
+    result = await client(request)
+    if isinstance(result, (types.BotMenuButtonDefault, types.BotMenuButtonCommands, types.BotMenuButton)):
+        return result
+    raise TypeError(f"Expected bot menu button, got {type(result).__name__}")
+
+
+async def _assert_menu_button(client: ServerlessTelegramClient, expected_type: MenuButtonType) -> None:
+    menu_button = await _get_menu_button(client)
+    assert isinstance(menu_button, expected_type)
+
+
+async def _set_and_assert_menu_button(
+    client: ServerlessTelegramClient,
+    button: MenuButton,
+    expected_type: MenuButtonType,
+) -> None:
+    await _set_menu_button(client, button)
+    await _assert_menu_button(client, expected_type)
+
 
 @pytest.mark.asyncio
 async def test_set_bot_menu_button_default() -> None:
@@ -13,26 +44,8 @@ async def test_set_bot_menu_button_default() -> None:
     client = ServerlessTelegramClient(build_application=build_test_application)
     await client.connect()
     try:
-        # First set to commands menu button
-        commands_button = types.BotMenuButtonCommands()
-        set_request = functions.bots.SetBotMenuButtonRequest(user_id=types.InputUserSelf(), button=commands_button)
-        result = await client(set_request)
-        assert result is True
-
-        # Verify it's set to commands
-        get_request = functions.bots.GetBotMenuButtonRequest(user_id=types.InputUserSelf())
-        menu_button = await client(get_request)
-        assert isinstance(menu_button, types.BotMenuButtonCommands)
-
-        # Now set to default
-        default_button = types.BotMenuButtonDefault()
-        set_request = functions.bots.SetBotMenuButtonRequest(user_id=types.InputUserSelf(), button=default_button)
-        result = await client(set_request)
-        assert result is True
-
-        # Verify it's set to default
-        menu_button = await client(get_request)
-        assert isinstance(menu_button, types.BotMenuButtonDefault)
+        await _set_and_assert_menu_button(client, types.BotMenuButtonCommands(), types.BotMenuButtonCommands)
+        await _set_and_assert_menu_button(client, types.BotMenuButtonDefault(), types.BotMenuButtonDefault)
     finally:
         await client.disconnect()
 
@@ -43,50 +56,23 @@ async def test_set_bot_menu_button_commands() -> None:
     client = ServerlessTelegramClient(build_application=build_test_application)
     await client.connect()
     try:
-        # Set to commands menu button
-        commands_button = types.BotMenuButtonCommands()
-        set_request = functions.bots.SetBotMenuButtonRequest(user_id=types.InputUserSelf(), button=commands_button)
-        result = await client(set_request)
-        assert result is True
-
-        # Verify it's set to commands
-        get_request = functions.bots.GetBotMenuButtonRequest(user_id=types.InputUserSelf())
-        menu_button = await client(get_request)
-        assert isinstance(menu_button, types.BotMenuButtonCommands)
+        await _set_and_assert_menu_button(client, types.BotMenuButtonCommands(), types.BotMenuButtonCommands)
     finally:
         await client.disconnect()
 
 
 @pytest.mark.asyncio
-async def test_set_bot_menu_button_unknown_type() -> None:
-    """Test SetBotMenuButtonRequest with an unknown button type defaults to None."""
+async def test_set_bot_menu_button_url_resets_to_default() -> None:
+    """Test unsupported URL menu buttons reset to default."""
     client = ServerlessTelegramClient(build_application=build_test_application)
     await client.connect()
     try:
-        # First set to commands
-        commands_button = types.BotMenuButtonCommands()
-        set_request = functions.bots.SetBotMenuButtonRequest(user_id=types.InputUserSelf(), button=commands_button)
-        await client(set_request)
-
-        # Verify it's set to commands
-        get_request = functions.bots.GetBotMenuButtonRequest(user_id=types.InputUserSelf())
-        menu_button = await client(get_request)
-        assert isinstance(menu_button, types.BotMenuButtonCommands)
-
-        # Access the internal menu button state directly to test the else clause
-        # We'll manually call the handler logic with a mock unknown button
-
-        # Manually set an unknown button type (simulate unknown type scenario)
-        # For this test, we'll just verify that setting default works as expected
-        # since creating unknown types is complex in the test environment
-        default_button = types.BotMenuButtonDefault()
-        set_request = functions.bots.SetBotMenuButtonRequest(user_id=types.InputUserSelf(), button=default_button)
-        result = await client(set_request)
-        assert result is True
-
-        # Verify it resets to default
-        menu_button = await client(get_request)
-        assert isinstance(menu_button, types.BotMenuButtonDefault)
+        await _set_and_assert_menu_button(client, types.BotMenuButtonCommands(), types.BotMenuButtonCommands)
+        await _set_and_assert_menu_button(
+            client,
+            types.BotMenuButton(text="Open", url="https://example.test"),
+            types.BotMenuButtonDefault,
+        )
 
     finally:
         await client.disconnect()
@@ -98,37 +84,12 @@ async def test_set_bot_menu_button_multiple_changes() -> None:
     client = ServerlessTelegramClient(build_application=build_test_application)
     await client.connect()
     try:
-        get_request = functions.bots.GetBotMenuButtonRequest(user_id=types.InputUserSelf())
+        await _assert_menu_button(client, types.BotMenuButtonDefault)
 
-        # Initial state should be default
-        menu_button = await client(get_request)
-        assert isinstance(menu_button, types.BotMenuButtonDefault)
-
-        # Change to commands
         commands_button = types.BotMenuButtonCommands()
-        set_request = functions.bots.SetBotMenuButtonRequest(user_id=types.InputUserSelf(), button=commands_button)
-        result = await client(set_request)
-        assert result is True
-
-        menu_button = await client(get_request)
-        assert isinstance(menu_button, types.BotMenuButtonCommands)
-
-        # Change back to default
-        default_button = types.BotMenuButtonDefault()
-        set_request = functions.bots.SetBotMenuButtonRequest(user_id=types.InputUserSelf(), button=default_button)
-        result = await client(set_request)
-        assert result is True
-
-        menu_button = await client(get_request)
-        assert isinstance(menu_button, types.BotMenuButtonDefault)
-
-        # Change to commands again
-        set_request = functions.bots.SetBotMenuButtonRequest(user_id=types.InputUserSelf(), button=commands_button)
-        result = await client(set_request)
-        assert result is True
-
-        menu_button = await client(get_request)
-        assert isinstance(menu_button, types.BotMenuButtonCommands)
+        await _set_and_assert_menu_button(client, commands_button, types.BotMenuButtonCommands)
+        await _set_and_assert_menu_button(client, types.BotMenuButtonDefault(), types.BotMenuButtonDefault)
+        await _set_and_assert_menu_button(client, commands_button, types.BotMenuButtonCommands)
 
     finally:
         await client.disconnect()
@@ -149,18 +110,14 @@ async def test_integration_reset_commands_and_set_menu_button() -> None:
         set_commands_request = functions.bots.SetBotCommandsRequest(scope=scope, commands=commands, lang_code="en")
         await client(set_commands_request)
 
-        commands_button = types.BotMenuButtonCommands()
-        set_menu_request = functions.bots.SetBotMenuButtonRequest(user_id=types.InputUserSelf(), button=commands_button)
-        await client(set_menu_request)
+        await _set_menu_button(client, types.BotMenuButtonCommands())
 
         # Verify initial state
         get_commands_request = functions.bots.GetBotCommandsRequest(scope=scope, lang_code="en")
         stored_commands = await client(get_commands_request)
         assert len(stored_commands) == 2
 
-        get_menu_request = functions.bots.GetBotMenuButtonRequest(user_id=types.InputUserSelf())
-        menu_button = await client(get_menu_request)
-        assert isinstance(menu_button, types.BotMenuButtonCommands)
+        await _assert_menu_button(client, types.BotMenuButtonCommands)
 
         # Reset commands
         reset_commands_request = functions.bots.ResetBotCommandsRequest(scope=scope, lang_code="en")
@@ -168,19 +125,13 @@ async def test_integration_reset_commands_and_set_menu_button() -> None:
         assert result is True
 
         # Set menu to default
-        default_button = types.BotMenuButtonDefault()
-        set_menu_default_request = functions.bots.SetBotMenuButtonRequest(
-            user_id=types.InputUserSelf(), button=default_button
-        )
-        result = await client(set_menu_default_request)
-        assert result is True
+        await _set_menu_button(client, types.BotMenuButtonDefault())
 
         # Verify final state
         stored_commands = await client(get_commands_request)
         assert len(stored_commands) == 0
 
-        menu_button = await client(get_menu_request)
-        assert isinstance(menu_button, types.BotMenuButtonDefault)
+        await _assert_menu_button(client, types.BotMenuButtonDefault)
 
     finally:
         await client.disconnect()

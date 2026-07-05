@@ -34,6 +34,24 @@ async def test_inline_button_click() -> None:
 
 
 @pytest.mark.asyncio
+async def test_inline_button_click_by_text() -> None:
+    """Test clicking inline buttons by visible text."""
+    client = ServerlessTelegramClient(build_application=build_test_application)
+    await client.connect()
+    try:
+        async with client.conversation("test_bot") as conv:
+            await conv.send_message("/inline")
+            msg_with_buttons = await conv.get_response()
+
+            await msg_with_buttons.click(text="Option A")
+            response_msg = await conv.get_response()
+
+            assert response_msg.text == "You chose: opt_a"
+    finally:
+        await client.disconnect()
+
+
+@pytest.mark.asyncio
 async def test_different_callback_data() -> None:
     """Test clicking different buttons produces different responses."""
     client = ServerlessTelegramClient(build_application=build_test_application)

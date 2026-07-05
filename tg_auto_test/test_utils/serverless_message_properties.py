@@ -10,21 +10,10 @@ from telethon.tl.types import (
     Photo,
 )
 
-from tg_auto_test.test_utils.json_types import JsonValue
 from tg_auto_test.test_utils.model_helpers import build_poll_media
 from tg_auto_test.test_utils.serverless_button import ServerlessButton
+from tg_auto_test.test_utils.serverless_message_helpers import _wrap_button_row
 from tg_auto_test.test_utils.serverless_message_metadata import ServerlessMessageMetadata
-
-
-def _wrap_button_row(row: JsonValue) -> list[ServerlessButton]:
-    """Convert a raw JSON row of buttons into ServerlessButton objects."""
-    if not isinstance(row, list):
-        return []
-    return [
-        ServerlessButton(text=str(btn["text"]), _callback_data=str(btn.get("callback_data", "")))
-        for btn in row
-        if isinstance(btn, dict)
-    ]
 
 
 class ServerlessMessageProperties(ServerlessMessageMetadata):
