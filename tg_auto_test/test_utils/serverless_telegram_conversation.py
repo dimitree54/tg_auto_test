@@ -1,8 +1,12 @@
 from pathlib import Path
 from types import TracebackType
 
+from telethon.tl.types import TypeMessageEntity
+
+from tg_auto_test.test_utils.conversation_client import ConversationClient
+from tg_auto_test.test_utils.incoming_text import apply_incoming_text
 from tg_auto_test.test_utils.models import ServerlessMessage
-from tg_auto_test.test_utils.serverless_conversation_runtime import ConversationClient, ConversationRuntime
+from tg_auto_test.test_utils.serverless_conversation_runtime import ConversationRuntime
 
 
 class ServerlessTelegramConversation:
@@ -23,23 +27,23 @@ class ServerlessTelegramConversation:
         del exc_type, exc, exc_tb
         self._runtime.restore()
 
-    async def send_message(self, text: str) -> ServerlessMessage:
+    async def send_message(
+        self, text: str, *, parse_mode: object = (), formatting_entities: list[TypeMessageEntity] | None = None
+    ) -> ServerlessMessage:
         before_tasks = self._runtime.begin_action()
         payload, msg = self._client._helpers.base_message_update(self._client._chat_id)
-        msg["text"] = text
-        if text.startswith("/"):
-            msg["entities"] = [
-                {"offset": 0, "length": text.find(" ") if " " in text else len(text), "type": "bot_command"}
-            ]
+        visible_text = apply_incoming_text(msg, text, parse_mode=parse_mode, formatting_entities=formatting_entities)
         await self._client._update_processor.process_update(self._client, payload)
         self._runtime.finish_action(before_tasks)
-        return ServerlessMessage(id=int(msg["message_id"]), text=text)
+        return ServerlessMessage(id=int(msg["message_id"]), text=visible_text)
 
     async def send_file(
         self,
         file: Path | bytes,
         *,
         caption: str = "",
+        parse_mode: object = (),
+        formatting_entities: list[TypeMessageEntity] | None = None,
         force_document: bool = False,
         voice_note: bool = False,
         video_note: bool = False,
@@ -48,6 +52,8 @@ class ServerlessTelegramConversation:
         result = await self._client._process_file_message(
             file,
             caption=caption,
+            parse_mode=parse_mode,
+            formatting_entities=formatting_entities,
             force_document=force_document,
             voice_note=voice_note,
             video_note=video_note,

@@ -88,9 +88,15 @@ ServerlessTelegramClient(
 
 Async context manager for message exchange:
 
-- `await conv.send_message(text: str)` — send text message
-- `await conv.send_file(file: Path | bytes, *, caption: str = "", force_document: bool = False, voice_note: bool = False, video_note: bool = False)` — send file
+- `await conv.send_message(text, *, parse_mode=(), formatting_entities=None)` — send text message
+- `await conv.send_file(file, *, caption="", parse_mode=(), formatting_entities=None, force_document=False, voice_note=False, video_note=False)` — send file
 - `await conv.get_response() -> ServerlessMessage` — get bot's response
+
+Client and conversation text/file sends accept Telethon Markdown (`md`/`markdown`),
+HTML, or explicit Telethon formatting entities. The default parse mode is Markdown;
+`parse_mode=None` disables parsing. Explicit entities take precedence over parsing.
+Incoming PTB messages receive visible text and Bot API `entities` or
+`caption_entities` separately, including hidden link URLs and UTF-16 offsets.
 
 ### ServerlessMessage
 

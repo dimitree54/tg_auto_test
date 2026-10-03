@@ -1,6 +1,6 @@
 """Helpers for building serverless demo trace requests and summaries."""
 
-from tg_auto_test.test_utils.file_processing_utils import build_file_message_payload, process_file_message_data
+from tg_auto_test.test_utils.file_message_processing import build_file_message_payload, process_file_message_data
 from tg_auto_test.test_utils.poll_vote_handler import create_callback_query_payload
 
 

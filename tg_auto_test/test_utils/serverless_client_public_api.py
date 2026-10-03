@@ -59,7 +59,6 @@ class ServerlessClientPublicAPI(ServerlessClientAuthStubs):
         non_default_params = [
             reply_to,
             attributes,
-            formatting_entities,
             file,
             thumb,
             buttons,
@@ -75,10 +74,10 @@ class ServerlessClientPublicAPI(ServerlessClientAuthStubs):
             raise NotImplementedError("Non-default parameters are not supported")
 
         # Check for non-default boolean parameters
-        if parse_mode != () or not link_preview or force_document or clear_draft or supports_streaming:
+        if not link_preview or force_document or clear_draft or supports_streaming:
             raise NotImplementedError("Non-default parameters are not supported")
 
-        return await self._process_text_message(message)
+        return await self._process_text_message(message, parse_mode=parse_mode, formatting_entities=formatting_entities)
 
     async def download_media(
         self,

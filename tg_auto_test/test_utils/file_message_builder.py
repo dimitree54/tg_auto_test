@@ -1,5 +1,8 @@
 from pathlib import Path
 
+from telethon.tl.types import TypeMessageEntity
+
+from tg_auto_test.test_utils.incoming_text import apply_incoming_text
 from tg_auto_test.test_utils.json_types import JsonValue
 from tg_auto_test.test_utils.media_metadata import audio_duration_seconds, mp4_duration_and_dimensions
 from tg_auto_test.test_utils.message_factory_media import image_dimensions
@@ -15,6 +18,8 @@ def build_file_payload(
     force_document: bool,
     voice_note: bool,
     video_note: bool,
+    parse_mode: object = (),
+    formatting_entities: list[TypeMessageEntity] | None = None,
 ) -> None:
     base: dict[str, JsonValue] = {"file_id": file_id, "file_unique_id": f"unique_{file_id}"}
 
@@ -37,8 +42,4 @@ def build_file_payload(
         msg["photo"] = photo
 
     if caption:
-        msg["caption"] = caption
-        if caption.startswith("/"):
-            entity: dict[str, JsonValue] = {"offset": 0, "length": len(caption), "type": "bot_command"}
-            entities: list[JsonValue] = [entity]
-            msg["caption_entities"] = entities
+        apply_incoming_text(msg, caption, caption=True, parse_mode=parse_mode, formatting_entities=formatting_entities)

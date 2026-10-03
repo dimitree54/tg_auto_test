@@ -1,39 +1,10 @@
 import asyncio
-from collections import deque
-from pathlib import Path
-from typing import Protocol
 
+from tg_auto_test.test_utils.conversation_client import ConversationClient
 from tg_auto_test.test_utils.models import ServerlessMessage, TelegramApiCall
-from tg_auto_test.test_utils.poll_vote_handler import PollTracker
 from tg_auto_test.test_utils.response_processor import _MESSAGE_METHODS, process_api_call
-from tg_auto_test.test_utils.serverless_bot_callback_answer import ServerlessBotCallbackAnswer
-from tg_auto_test.test_utils.serverless_client_helpers import ServerlessClientHelpers
 from tg_auto_test.test_utils.serverless_outbox_utils import pop_message_by_id, remove_message
-from tg_auto_test.test_utils.serverless_update_processor import ServerlessUpdateProcessor, _replace_edited_message
-from tg_auto_test.test_utils.stub_request import StubTelegramRequest
-
-
-class ConversationClient(Protocol):
-    _chat_id: int
-    _edit_outbox: deque[ServerlessMessage]
-    _helpers: ServerlessClientHelpers
-    _invoices: dict[int, dict[str, object]]
-    _outbox: deque[ServerlessMessage]
-    _poll_tracker: PollTracker | None
-    _request: StubTelegramRequest
-    _update_processor: ServerlessUpdateProcessor
-
-    async def _process_file_message(
-        self,
-        file: Path | bytes,
-        *,
-        caption: str = "",
-        force_document: bool = False,
-        voice_note: bool = False,
-        video_note: bool = False,
-    ) -> ServerlessMessage: ...
-
-    async def _handle_click(self, message_id: int, data: str) -> ServerlessBotCallbackAnswer: ...
+from tg_auto_test.test_utils.serverless_update_processor import _replace_edited_message
 
 
 class ConversationRuntime:
