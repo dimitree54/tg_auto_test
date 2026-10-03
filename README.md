@@ -138,6 +138,10 @@ Core messaging:
 - `sendMessage` — send text messages with reply markup
 - `editMessageText` — edit message text
 
+Bot API HTML and MarkdownV2 text and captions are parsed into visible text and
+formatting entities, including link targets and UTF-16 offsets. Explicit entities
+are preserved. Malformed MarkdownV2 and unsupported parse modes fail explicitly.
+
 Media:
 - `sendDocument` — send documents
 - `sendVoice` — send voice notes

@@ -1,7 +1,7 @@
 import json
 from typing import Protocol
 
-from tg_auto_test.test_utils.html_parser import parse_html
+from tg_auto_test.test_utils.bot_api_formatting import parse_bot_api_text
 from tg_auto_test.test_utils.json_types import JsonValue
 
 
@@ -60,13 +60,8 @@ class CommandMenuMixin:
 
     def _handle_edit_message_text(self: _CommandMenuHost, parameters: dict[str, str]) -> tuple[int, bytes]:
         msg: dict[str, JsonValue] = self._edit_message(parameters)
-        raw_text = parameters["text"]
-        parse_mode = parameters.get("parse_mode", "")
-        if parse_mode.lower() == "html":
-            text, entities = parse_html(raw_text)
-            msg["text"] = text
-            if entities:
-                msg["entities"] = entities
-        else:
-            msg["text"] = raw_text
+        text, entities = parse_bot_api_text(parameters)
+        msg["text"] = text
+        if entities:
+            msg["entities"] = entities
         return self._ok_response(msg)

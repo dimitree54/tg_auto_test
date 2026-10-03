@@ -1,8 +1,10 @@
 """Convert Telegram Bot API entity dicts to Telethon entity objects."""
 
 from telethon.tl.types import (
+    MessageEntityBlockquote,
     MessageEntityBold,
     MessageEntityCode,
+    MessageEntityCustomEmoji,
     MessageEntityItalic,
     MessageEntityPre,
     MessageEntitySpoiler,
@@ -36,8 +38,12 @@ def convert_entity(entity_dict: dict[str, JsonValue]) -> object | None:
         return simple_cls(offset=offset, length=length)
     if entity_type == "pre":
         return MessageEntityPre(offset=offset, length=length, language=str(entity_dict.get("language", "")))
-    if entity_type == "text_url":
+    if entity_type == "text_link":
         return MessageEntityTextUrl(offset=offset, length=length, url=str(entity_dict.get("url", "")))
+    if entity_type in ("blockquote", "expandable_blockquote"):
+        return MessageEntityBlockquote(offset=offset, length=length, collapsed=entity_type == "expandable_blockquote")
+    if entity_type == "custom_emoji":
+        return MessageEntityCustomEmoji(offset=offset, length=length, document_id=int(entity_dict["custom_emoji_id"]))
     return None
 
 

@@ -36,6 +36,12 @@ def build_serverless_message(
 
     message = builder(file_id, raw_bytes, file_data, file_store)
     message.id = message_id
+    if isinstance(call.result, dict) and "caption" in call.result:
+        caption = call.result["caption"]
+        if not isinstance(caption, str):
+            raise TypeError("Bot API caption must be a string")
+        message.text = caption
+        message.entities = _extract_entities_from_result(call, "caption_entities")
     return message
 
 
@@ -67,10 +73,10 @@ def _parse_reply_markup(parameters: dict[str, str]) -> ReplyMarkup | None:
     return markup
 
 
-def _extract_entities_from_result(call: TelegramApiCall) -> list[object]:
+def _extract_entities_from_result(call: TelegramApiCall, key: str = "entities") -> list[object]:
     if not isinstance(call.result, dict):
         raise TypeError(f"{call.api_method} result must be a dict, got {type(call.result).__name__}")
-    raw_entities = call.result.get("entities")
+    raw_entities = call.result.get(key)
     if raw_entities is None:
         return []
     if not isinstance(raw_entities, list):

@@ -27,7 +27,7 @@ _TAG_TO_ENTITY_TYPE: dict[str, str] = {
     "del": "strikethrough",
     "code": "code",
     "pre": "pre",
-    "a": "text_url",
+    "a": "text_link",
     "tg-spoiler": "spoiler",
 }
 
@@ -43,7 +43,7 @@ def _build_entity(tag: str, offset: int, length: int, attrs: dict[str, str]) -> 
         return None
 
     result: dict[str, JsonValue] = {"type": entity_type, "offset": offset, "length": length}
-    if entity_type == "text_url":
+    if entity_type == "text_link":
         result["url"] = attrs.get("href", "")
     if entity_type == "pre" and attrs.get("language"):
         result["language"] = attrs["language"]
@@ -78,7 +78,7 @@ class _TelegramHTMLParser(HTMLParser):
 
     def handle_data(self, data: str) -> None:
         self._pieces.append(data)
-        self._offset += len(data)
+        self._offset += len(data.encode("utf-16-le")) // 2
 
     def result(self) -> tuple[str, list[dict[str, JsonValue]]]:
         return "".join(self._pieces), self._entities
